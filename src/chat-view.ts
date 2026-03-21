@@ -51,11 +51,11 @@ export class RecallLocusChatView extends ItemView {
 	}
 
 	getViewType() { return VIEW_TYPE_RL_CHAT; }
-	getDisplayText() { return "RecallLocus Chat"; }
+	getDisplayText() { return "Chat"; }
 	getIcon() { return "message-square"; }
 
-	async onOpen() { this.buildUI(); }
-	async onClose() { this.activeAgent?.cancel(); }
+	onOpen(): Promise<void> { this.buildUI(); return Promise.resolve(); }
+	onClose(): Promise<void> { this.activeAgent?.cancel(); return Promise.resolve(); }
 
 	refreshSettings() {
 		this.rootEl?.querySelectorAll<HTMLElement>(".rl-space-label").forEach((el) => {
@@ -85,13 +85,13 @@ export class RecallLocusChatView extends ItemView {
 		this.sessionsScreenEl.empty();
 
 		const header = this.sessionsScreenEl.createDiv("rl-chat-header");
-		header.createEl("span", { text: "RecallLocus Chat", cls: "rl-chat-title" });
+		header.createEl("span", { text: "Chat", cls: "rl-chat-title" });
 		const spaceEl = header.createEl("span", { cls: "rl-space-label" });
 		const s = this.plugin.settings.spaceName;
 		spaceEl.setText(s || "no space set");
 		spaceEl.toggleClass("rl-space-unset", !s);
 
-		const newBtn = this.sessionsScreenEl.createEl("button", { text: "+ New Chat", cls: "rl-new-chat-btn" });
+		const newBtn = this.sessionsScreenEl.createEl("button", { text: "New chat", cls: "rl-new-chat-btn" });
 		newBtn.addEventListener("click", () => this.newSession());
 
 		const list = this.sessionsScreenEl.createDiv("rl-sessions-list");
@@ -139,16 +139,16 @@ export class RecallLocusChatView extends ItemView {
 		this.inputEl.addEventListener("keydown", (e) => {
 			if (e.key === "Enter" && !e.shiftKey) {
 				e.preventDefault();
-				this.submit();
+				void this.submit();
 			}
 		});
 
 		const btnGroup = inputRow.createDiv("rl-chat-btns");
 		this.sendBtn = btnGroup.createEl("button", { text: "Send", cls: "rl-send-btn" });
-		this.sendBtn.addEventListener("click", () => this.submit());
+		this.sendBtn.addEventListener("click", () => { void this.submit(); });
 
 		this.stopBtn = btnGroup.createEl("button", { text: "Stop", cls: "rl-stop-btn" });
-		this.stopBtn.style.display = "none";
+		this.stopBtn.hide();
 		this.stopBtn.addEventListener("click", () => {
 			this.activeAgent?.cancel();
 			this.setRunning(false);
@@ -159,8 +159,8 @@ export class RecallLocusChatView extends ItemView {
 		this.activeAgent?.cancel();
 		this.currentSession = null;
 		this.buildSessionsScreen();
-		this.sessionsScreenEl.style.display = "";
-		this.chatScreenEl.style.display = "none";
+		this.sessionsScreenEl.show();
+		this.chatScreenEl.hide();
 	}
 
 	private newSession() {
@@ -190,20 +190,20 @@ export class RecallLocusChatView extends ItemView {
 			} else {
 				const wrapper = this.messagesEl.createDiv("rl-msg-assistant");
 				const bubble = new AssistantBubble(wrapper, this.app, this);
-				if (turn.content) bubble.restoreAnswer(turn.content, (path) => this.openFile(path));
+				if (turn.content) bubble.restoreAnswer(turn.content, (path) => { void this.openFile(path); });
 				if (turn.error) bubble.showError(turn.error);
 			}
 		}
 
-		this.sessionsScreenEl.style.display = "none";
-		this.chatScreenEl.style.display = "";
+		this.sessionsScreenEl.hide();
+		this.chatScreenEl.show();
 		this.scrollToBottom();
 		this.inputEl.focus();
 	}
 
 	private deleteSession(id: string) {
 		this.plugin.chatSessions = (this.plugin.chatSessions ?? []).filter((s) => s.id !== id);
-		this.plugin.saveChatSessions();
+		void this.plugin.saveChatSessions();
 		this.buildSessionsScreen();
 	}
 
@@ -233,7 +233,7 @@ export class RecallLocusChatView extends ItemView {
 
 		const turn: Turn = { role: "assistant", content: "", steps: [] };
 		this.currentSession.turns.push(turn);
-		const bubble = this.renderAssistantBubble(turn);
+		const bubble = this.renderAssistantBubble();
 
 		this.activeAgent = new Agent({ locusUrl: recallLocusUrl, ollamaUrl, space: spaceName, model: chatModel });
 
@@ -245,7 +245,7 @@ export class RecallLocusChatView extends ItemView {
 		this.setRunning(false);
 
 		this.currentSession.updatedAt = Date.now();
-		this.plugin.saveChatSessions();
+		void this.plugin.saveChatSessions();
 	}
 
 	// ---------------------------------------------------------------------------
@@ -303,7 +303,7 @@ export class RecallLocusChatView extends ItemView {
 				break;
 
 			case "answer_done":
-				bubble.finishAnswer((path) => this.openFile(path));
+				bubble.finishAnswer((path) => { void this.openFile(path); });
 				break;
 
 			case "error":
@@ -325,7 +325,7 @@ export class RecallLocusChatView extends ItemView {
 		this.scrollToBottom();
 	}
 
-	private renderAssistantBubble(_turn: Turn): AssistantBubble {
+	private renderAssistantBubble(): AssistantBubble {
 		const wrapper = this.messagesEl.createDiv("rl-msg-assistant");
 		const bubble = new AssistantBubble(wrapper, this.app, this);
 		this.scrollToBottom();
@@ -339,8 +339,8 @@ export class RecallLocusChatView extends ItemView {
 	}
 
 	private setRunning(running: boolean) {
-		this.sendBtn.style.display = running ? "none" : "";
-		this.stopBtn.style.display = running ? "" : "none";
+		if (running) { this.sendBtn.hide(); this.stopBtn.show(); }
+		else { this.sendBtn.show(); this.stopBtn.hide(); }
 		this.inputEl.disabled = running;
 	}
 
@@ -384,16 +384,16 @@ class AssistantBubble extends Component {
 		this.thinkingEl.createSpan({ cls: "rl-thinking-dot" });
 		this.thinkingEl.createSpan({ cls: "rl-thinking-dot" });
 		this.thinkingEl.createSpan({ cls: "rl-thinking-dot" });
-		this.thinkingEl.style.display = "none";
+		this.thinkingEl.hide();
 
 		// Step trace (collapsible)
 		this.stepsEl = root.createDiv("rl-steps");
 		this.stepsToggle = this.stepsEl.createDiv("rl-steps-toggle");
 		this.stepsBody = this.stepsEl.createDiv("rl-steps-body");
 		this.stepsToggle.addEventListener("click", () => {
-			const open = this.stepsBody.style.display !== "none";
-			this.stepsBody.style.display = open ? "none" : "";
-			this.stepsToggle.toggleClass("rl-steps-collapsed", open);
+			const isHidden = this.stepsBody.hasClass("rl-hidden");
+			this.stepsBody.toggleClass("rl-hidden", !isHidden);
+			this.stepsToggle.toggleClass("rl-steps-collapsed", !isHidden);
 		});
 		this.updateStepsToggle();
 
@@ -405,7 +405,7 @@ class AssistantBubble extends Component {
 	}
 
 	setThinking(on: boolean) {
-		this.thinkingEl.style.display = on ? "flex" : "none";
+		if (on) { this.thinkingEl.show(); } else { this.thinkingEl.hide(); }
 	}
 
 	addStep(step: StepRecord) {
@@ -438,13 +438,13 @@ class AssistantBubble extends Component {
 	resolveOpenFileStep(doc_id: string, source?: string) {
 		const el = this.stepEls.get(`open_file:${doc_id}`);
 		if (!el) return;
-		const label = el.querySelector(".rl-step-fetching") as HTMLElement | null;
-		if (label) label.setText(source ?? doc_id);
+		const label = el.querySelector(".rl-step-fetching");
+		if (label) label.textContent = source ?? doc_id;
 		el.createSpan({ text: "✓", cls: "rl-step-badge" });
 	}
 
 	collapseSteps() {
-		this.stepsBody.style.display = "none";
+		this.stepsBody.addClass("rl-hidden");
 		this.stepsToggle.addClass("rl-steps-collapsed");
 		this.updateStepsToggle();
 	}
@@ -465,7 +465,7 @@ class AssistantBubble extends Component {
 		this.answerEl.empty();
 		this.answerEl.removeClass("rl-answer-streaming");
 
-		MarkdownRenderer.render(
+		void MarkdownRenderer.render(
 			(this.app as Parameters<typeof MarkdownRenderer.render>[0]),
 			raw,
 			this.answerEl,
@@ -478,8 +478,8 @@ class AssistantBubble extends Component {
 	}
 
 	restoreAnswer(content: string, onOpen: (path: string) => void) {
-		this.stepsEl.style.display = "none";
-		MarkdownRenderer.render(
+		this.stepsEl.hide();
+		void MarkdownRenderer.render(
 			(this.app as Parameters<typeof MarkdownRenderer.render>[0]),
 			content,
 			this.answerEl,
@@ -512,7 +512,7 @@ class AssistantBubble extends Component {
 	private updateStepsToggle() {
 		const count = this.stepsBody.children.length;
 		this.stepsToggle.setText(count ? `${count} step${count !== 1 ? "s" : ""}` : "");
-		this.stepsEl.style.display = count ? "" : "none";
+		this.stepsEl.toggleClass("rl-hidden", count === 0);
 	}
 }
 

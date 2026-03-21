@@ -1,4 +1,4 @@
-import { Platform, requestUrl } from "obsidian";
+import { requestUrl } from "obsidian";
 
 export interface OllamaMessage {
 	role: "system" | "user" | "assistant";
@@ -47,49 +47,15 @@ export class OllamaClient {
 		return res.json.message?.content ?? "";
 	}
 
-	/** Streaming call — fires onToken for each chunk, returns full accumulated text.
-	 *  Falls back to a single non-streaming call on mobile where ReadableStream is unreliable. */
+	/** Non-streaming chat call that fires onToken with the complete response.
+	 *  Uses requestUrl for cross-platform compatibility. */
 	async chatStream(
 		messages: OllamaMessage[],
 		model: string,
-		onToken: (token: string) => void,
-		signal?: AbortSignal
+		onToken: (token: string) => void
 	): Promise<string> {
-		if (Platform.isMobile) {
-			const full = await this.chat(messages, model);
-			onToken(full);
-			return full;
-		}
-
-		const res = await fetch(`${this.baseUrl}/api/chat`, {
-			method: "POST",
-			headers: { "Content-Type": "application/json" },
-			body: JSON.stringify({ model, messages, stream: true }),
-			signal,
-		});
-		if (!res.ok) throw new Error(`Ollama error: ${res.status} ${res.statusText}`);
-
-		const reader = res.body?.getReader();
-		if (!reader) throw new Error("No response body");
-
-		const decoder = new TextDecoder();
-		let full = "";
-
-		try {
-			while (true) {
-				const { done, value } = await reader.read();
-				if (done) break;
-				for (const line of decoder.decode(value, { stream: true }).split("\n")) {
-					if (!line.trim()) continue;
-					try {
-						const token = (JSON.parse(line).message?.content as string) ?? "";
-						if (token) { full += token; onToken(token); }
-					} catch { /* partial line, skip */ }
-				}
-			}
-		} finally {
-			reader.releaseLock();
-		}
+		const full = await this.chat(messages, model);
+		onToken(full);
 		return full;
 	}
 }

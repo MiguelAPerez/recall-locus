@@ -1,4 +1,4 @@
-import { ItemView, WorkspaceLeaf, TFile, debounce } from "obsidian";
+import { ItemView, WorkspaceLeaf, TFile } from "obsidian";
 import type RecallLocusPlugin from "./main";
 import { RecallLocusClient, SearchResult } from "./recall-locus-client";
 
@@ -26,18 +26,21 @@ export class RecallLocusChatView extends ItemView {
 	}
 
 	getDisplayText(): string {
-		return "RecallLocus Search";
+		return "Semantic search";
 	}
 
 	getIcon(): string {
 		return "search";
 	}
 
-	async onOpen(): Promise<void> {
+	onOpen(): Promise<void> {
 		this.buildUI();
+		return Promise.resolve();
 	}
 
-	async onClose(): Promise<void> {}
+	onClose(): Promise<void> {
+		return Promise.resolve();
+	}
 
 	/** Refresh client when settings change. */
 	refreshClient(): void {
@@ -58,7 +61,7 @@ export class RecallLocusChatView extends ItemView {
 
 		// Header
 		const header = root.createDiv("rl-header");
-		header.createEl("span", { text: "RecallLocus", cls: "rl-title" });
+		header.createEl("span", { text: "Search", cls: "rl-title" });
 		this.spaceLabel = header.createEl("span", { cls: "rl-space-label" });
 		this.updateSpaceLabel();
 
@@ -70,11 +73,11 @@ export class RecallLocusChatView extends ItemView {
 			cls: "rl-input",
 		});
 		this.input.addEventListener("keydown", (e) => {
-			if (e.key === "Enter") this.runSearch();
+			if (e.key === "Enter") void this.runSearch();
 		});
 
 		const searchBtn = searchBar.createEl("button", { text: "Search", cls: "rl-search-btn" });
-		searchBtn.addEventListener("click", () => this.runSearch());
+		searchBtn.addEventListener("click", () => { void this.runSearch(); });
 
 		// Result count selector
 		const controls = root.createDiv("rl-controls");
@@ -106,7 +109,7 @@ export class RecallLocusChatView extends ItemView {
 		const query = this.input.value.trim();
 		if (!query) return;
 
-		const { spaceName, recallLocusUrl } = this.plugin.settings;
+		const { spaceName } = this.plugin.settings;
 		if (!spaceName) {
 			this.setStatus("Set a space name in RecallLocus settings first.");
 			return;
@@ -149,29 +152,35 @@ export class RecallLocusChatView extends ItemView {
 			});
 
 			// Excerpt
-			const excerpt = this.highlight(result.text.slice(0, 200).trim(), query);
 			const excerptEl = card.createDiv("rl-result-excerpt");
-			excerptEl.innerHTML = excerpt + (result.text.length > 200 ? "…" : "");
+			this.renderHighlight(excerptEl, result.text.slice(0, 200).trim(), query);
+			if (result.text.length > 200) excerptEl.appendText("…");
 
 			// Click to open
 			if (result.source) {
 				card.addClass("rl-result-clickable");
-				card.addEventListener("click", () => this.openNote(result.source!));
+				card.addEventListener("click", () => { void this.openNote(result.source!); });
 			}
 		}
 	}
 
-	private highlight(text: string, query: string): string {
-		const escaped = text.replace(/[&<>"']/g, (c) =>
-			({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c] ?? c)
-		);
+	private renderHighlight(container: HTMLElement, text: string, query: string): void {
 		const terms = query
 			.split(/\s+/)
 			.filter(Boolean)
 			.map((t) => t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
-		if (!terms.length) return escaped;
+		if (!terms.length) {
+			container.appendText(text);
+			return;
+		}
 		const re = new RegExp(`(${terms.join("|")})`, "gi");
-		return escaped.replace(re, "<mark>$1</mark>");
+		let last = 0;
+		for (const m of text.matchAll(re)) {
+			if ((m.index ?? 0) > last) container.appendText(text.slice(last, m.index));
+			container.createEl("mark", { text: m[0] });
+			last = (m.index ?? 0) + m[0].length;
+		}
+		if (last < text.length) container.appendText(text.slice(last));
 	}
 
 	private async openNote(source: string): Promise<void> {

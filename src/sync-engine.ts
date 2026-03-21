@@ -1,4 +1,4 @@
-import { Notice, TFile, TAbstractFile, Vault } from "obsidian";
+import { Notice, TFile } from "obsidian";
 import type RecallLocusPlugin from "./main";
 import { RecallLocusClient } from "./recall-locus-client";
 
@@ -45,7 +45,7 @@ export class SyncEngine {
 		if (this.isSyncing) return;
 		const { spaceName } = this.plugin.settings;
 		if (!spaceName) {
-			new Notice("RecallLocus: set a space name in settings before syncing.");
+			new Notice("Set a space name in settings before syncing.");
 			return;
 		}
 
@@ -139,7 +139,7 @@ export class SyncEngine {
 	// -------------------------------------------------------------------------
 
 	private async ingestFile(file: TFile): Promise<void> {
-		const { spaceName, syncData } = this.resolveContext();
+		const { spaceName } = this.resolveContext();
 		const text = await this.plugin.app.vault.read(file);
 		if (!text.trim()) return;
 		const resp = await this.client.ingestText(spaceName, text, file.path);

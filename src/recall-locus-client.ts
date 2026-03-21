@@ -73,7 +73,9 @@ export class RecallLocusClient {
 		// Check existing spaces first
 		const listRes = await requestUrl({ url: `${this.baseUrl}/spaces`, throw: false });
 		if (listRes.status === 200) {
-			const spaces: string[] = listRes.json.spaces ?? [];
+			const body = listRes.json;
+			// Handle both { spaces: [...] } and bare array responses
+			const spaces: string[] = Array.isArray(body) ? body : (body.spaces ?? []);
 			if (spaces.includes(name)) {
 				this.confirmedSpaces.add(name);
 				return;
@@ -89,7 +91,8 @@ export class RecallLocusClient {
 			throw: false,
 		});
 
-		if (createRes.status === 200 || createRes.status === 201) {
+		// 201 = created, 200 = ok, 409 = already exists, 404 = no create endpoint (auto-create on ingest)
+		if (createRes.status === 200 || createRes.status === 201 || createRes.status === 409 || createRes.status === 404) {
 			this.confirmedSpaces.add(name);
 		} else {
 			throw new Error(`Failed to create space "${name}": ${createRes.status}`);
