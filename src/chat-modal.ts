@@ -47,7 +47,7 @@ export class RecallLocusChatModal extends Modal {
 
 		// Title row
 		const titleRow = contentEl.createDiv("rl-modal-title-row");
-		titleRow.createEl("span", { text: "Ask RecallLocus", cls: "rl-modal-title" });
+		titleRow.createEl("span", { text: "Quick ask", cls: "rl-modal-title" });
 		const spaceName = this.plugin.settings.spaceName;
 		titleRow.createEl("span", {
 			text: spaceName || "no space set",
@@ -187,7 +187,7 @@ export class RecallLocusChatModal extends Modal {
 				this.answerEl.removeClass("rl-answer-streaming");
 
 				const comp = new Component();
-				MarkdownRenderer.render(this.app, raw, this.answerEl, "", comp);
+				void MarkdownRenderer.render(this.app, raw, this.answerEl, "", comp);
 
 				// Extract .md paths mentioned in the answer and render open buttons
 				for (const m of raw.matchAll(/[\w./ -]+\.md/g)) {
@@ -247,6 +247,6 @@ export class RecallLocusChatModal extends Modal {
 			leaf = this.app.workspace.getRightLeaf(false)!;
 			await leaf.setViewState({ type: VIEW_TYPE_RL_CHAT, active: true });
 		}
-		this.app.workspace.revealLeaf(leaf);
+		await this.app.workspace.revealLeaf(leaf);
 	}
 }

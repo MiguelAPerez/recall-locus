@@ -26,7 +26,7 @@ export class RecallLocusChatView extends ItemView {
 	}
 
 	getDisplayText(): string {
-		return "RecallLocus search";
+		return "Semantic search";
 	}
 
 	getIcon(): string {
@@ -61,7 +61,7 @@ export class RecallLocusChatView extends ItemView {
 
 		// Header
 		const header = root.createDiv("rl-header");
-		header.createEl("span", { text: "RecallLocus", cls: "rl-title" });
+		header.createEl("span", { text: "Search", cls: "rl-title" });
 		this.spaceLabel = header.createEl("span", { cls: "rl-space-label" });
 		this.updateSpaceLabel();
 

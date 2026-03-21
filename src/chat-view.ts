@@ -51,7 +51,7 @@ export class RecallLocusChatView extends ItemView {
 	}
 
 	getViewType() { return VIEW_TYPE_RL_CHAT; }
-	getDisplayText() { return "RecallLocus chat"; }
+	getDisplayText() { return "Chat"; }
 	getIcon() { return "message-square"; }
 
 	onOpen(): Promise<void> { this.buildUI(); return Promise.resolve(); }
@@ -85,13 +85,13 @@ export class RecallLocusChatView extends ItemView {
 		this.sessionsScreenEl.empty();
 
 		const header = this.sessionsScreenEl.createDiv("rl-chat-header");
-		header.createEl("span", { text: "RecallLocus Chat", cls: "rl-chat-title" });
+		header.createEl("span", { text: "Chat", cls: "rl-chat-title" });
 		const spaceEl = header.createEl("span", { cls: "rl-space-label" });
 		const s = this.plugin.settings.spaceName;
 		spaceEl.setText(s || "no space set");
 		spaceEl.toggleClass("rl-space-unset", !s);
 
-		const newBtn = this.sessionsScreenEl.createEl("button", { text: "+ New chat", cls: "rl-new-chat-btn" });
+		const newBtn = this.sessionsScreenEl.createEl("button", { text: "New chat", cls: "rl-new-chat-btn" });
 		newBtn.addEventListener("click", () => this.newSession());
 
 		const list = this.sessionsScreenEl.createDiv("rl-sessions-list");
@@ -190,7 +190,7 @@ export class RecallLocusChatView extends ItemView {
 			} else {
 				const wrapper = this.messagesEl.createDiv("rl-msg-assistant");
 				const bubble = new AssistantBubble(wrapper, this.app, this);
-				if (turn.content) bubble.restoreAnswer(turn.content, (path) => this.openFile(path));
+				if (turn.content) bubble.restoreAnswer(turn.content, (path) => { void this.openFile(path); });
 				if (turn.error) bubble.showError(turn.error);
 			}
 		}
@@ -233,7 +233,7 @@ export class RecallLocusChatView extends ItemView {
 
 		const turn: Turn = { role: "assistant", content: "", steps: [] };
 		this.currentSession.turns.push(turn);
-		const bubble = this.renderAssistantBubble(turn);
+		const bubble = this.renderAssistantBubble();
 
 		this.activeAgent = new Agent({ locusUrl: recallLocusUrl, ollamaUrl, space: spaceName, model: chatModel });
 
@@ -303,7 +303,7 @@ export class RecallLocusChatView extends ItemView {
 				break;
 
 			case "answer_done":
-				bubble.finishAnswer((path) => this.openFile(path));
+				bubble.finishAnswer((path) => { void this.openFile(path); });
 				break;
 
 			case "error":
@@ -325,7 +325,7 @@ export class RecallLocusChatView extends ItemView {
 		this.scrollToBottom();
 	}
 
-	private renderAssistantBubble(_turn: Turn): AssistantBubble {
+	private renderAssistantBubble(): AssistantBubble {
 		const wrapper = this.messagesEl.createDiv("rl-msg-assistant");
 		const bubble = new AssistantBubble(wrapper, this.app, this);
 		this.scrollToBottom();
@@ -465,7 +465,7 @@ class AssistantBubble extends Component {
 		this.answerEl.empty();
 		this.answerEl.removeClass("rl-answer-streaming");
 
-		MarkdownRenderer.render(
+		void MarkdownRenderer.render(
 			(this.app as Parameters<typeof MarkdownRenderer.render>[0]),
 			raw,
 			this.answerEl,
@@ -479,7 +479,7 @@ class AssistantBubble extends Component {
 
 	restoreAnswer(content: string, onOpen: (path: string) => void) {
 		this.stepsEl.hide();
-		MarkdownRenderer.render(
+		void MarkdownRenderer.render(
 			(this.app as Parameters<typeof MarkdownRenderer.render>[0]),
 			content,
 			this.answerEl,

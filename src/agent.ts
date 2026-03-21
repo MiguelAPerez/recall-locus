@@ -200,8 +200,7 @@ export class Agent {
 					await this.ollama.chatStream(
 						synthMessages,
 						this.model,
-						(token) => emit({ type: "answer_token", token }),
-						this.abort.signal
+						(token) => emit({ type: "answer_token", token })
 					);
 				} catch (err) {
 					if ((err as Error).name !== "AbortError") {

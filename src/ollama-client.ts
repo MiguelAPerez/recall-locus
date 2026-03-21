@@ -52,8 +52,7 @@ export class OllamaClient {
 	async chatStream(
 		messages: OllamaMessage[],
 		model: string,
-		onToken: (token: string) => void,
-		_signal?: AbortSignal
+		onToken: (token: string) => void
 	): Promise<string> {
 		const full = await this.chat(messages, model);
 		onToken(full);

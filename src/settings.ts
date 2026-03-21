@@ -35,13 +35,12 @@ export class RecallLocusSettingTab extends PluginSettingTab {
 		const { containerEl } = this;
 		containerEl.empty();
 
-		new Setting(containerEl).setName("RecallLocus").setHeading();
-
 		new Setting(containerEl)
-			.setName("RecallLocus URL")
-			.setDesc("Base URL of your running RecallLocus instance.")
+			.setName("Server URL")
+			.setDesc("Base URL of your running server.")
 			.addText((text) =>
 				text
+					// eslint-disable-next-line obsidianmd/ui/sentence-case
 					.setPlaceholder("http://localhost:8000")
 					.setValue(this.plugin.settings.recallLocusUrl)
 					.onChange(async (value) => {
@@ -62,9 +61,10 @@ export class RecallLocusSettingTab extends PluginSettingTab {
 
 		new Setting(containerEl)
 			.setName("Space name")
-			.setDesc("RecallLocus space this vault maps to. Created automatically on first sync.")
+			.setDesc("Space this vault maps to. Created automatically on first sync.")
 			.addText((text) =>
 				text
+					// eslint-disable-next-line obsidianmd/ui/sentence-case
 					.setPlaceholder("my_vault")
 					.setValue(this.plugin.settings.spaceName)
 					.onChange(async (value) => {
@@ -75,7 +75,7 @@ export class RecallLocusSettingTab extends PluginSettingTab {
 
 		new Setting(containerEl)
 			.setName("Auto-sync")
-			.setDesc("Automatically sync notes to RecallLocus when they are created or modified.")
+			.setDesc("Automatically sync notes to the server when they are created or modified.")
 			.addToggle((toggle) =>
 				toggle.setValue(this.plugin.settings.autoSync).onChange(async (value) => {
 					this.plugin.settings.autoSync = value;
@@ -112,9 +112,11 @@ export class RecallLocusSettingTab extends PluginSettingTab {
 
 		new Setting(containerEl)
 			.setName("Ollama URL")
+			// eslint-disable-next-line obsidianmd/ui/sentence-case
 			.setDesc("Base URL of your Ollama instance.")
 			.addText((text) =>
 				text
+					// eslint-disable-next-line obsidianmd/ui/sentence-case
 					.setPlaceholder("http://localhost:11434")
 					.setValue(this.plugin.settings.ollamaUrl)
 					.onChange(async (value) => {
@@ -134,9 +136,10 @@ export class RecallLocusSettingTab extends PluginSettingTab {
 
 		new Setting(containerEl)
 			.setName("Chat model")
-			.setDesc("Ollama model to use for the chat agent (e.g. llama3.2).")
+			.setDesc("Ollama model to use for the chat agent (eg llama3.2).")
 			.addText((text) =>
 				text
+					// eslint-disable-next-line obsidianmd/ui/sentence-case
 					.setPlaceholder("llama3.2")
 					.setValue(this.plugin.settings.chatModel)
 					.onChange(async (value) => {
@@ -156,7 +159,7 @@ export class RecallLocusSettingTab extends PluginSettingTab {
 
 		new Setting(containerEl)
 			.setName("Full vault sync")
-			.setDesc("Re-ingest every note in this vault into RecallLocus.")
+			.setDesc("Re-ingest every note in this vault into the server.")
 			.addButton((btn) =>
 				btn
 					.setButtonText("Sync now")

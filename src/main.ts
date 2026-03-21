@@ -36,8 +36,8 @@ export default class RecallLocusPlugin extends Plugin {
 		this.setStatus("idle");
 
 		// Ribbon icons
-		this.addRibbonIcon("search", "RecallLocus search", () => { void this.activateView(VIEW_TYPE_RL_SEARCH); });
-		this.addRibbonIcon("message-square", "RecallLocus chat", () => { void this.activateView(VIEW_TYPE_RL_CHAT); });
+		this.addRibbonIcon("search", "Search notes", () => { void this.activateView(VIEW_TYPE_RL_SEARCH); });
+		this.addRibbonIcon("message-square", "Chat with notes", () => { void this.activateView(VIEW_TYPE_RL_CHAT); });
 
 		// Commands
 		this.addCommand({

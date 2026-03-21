@@ -45,7 +45,7 @@ export class SyncEngine {
 		if (this.isSyncing) return;
 		const { spaceName } = this.plugin.settings;
 		if (!spaceName) {
-			new Notice("RecallLocus: set a space name in settings before syncing.");
+			new Notice("Set a space name in settings before syncing.");
 			return;
 		}
 
