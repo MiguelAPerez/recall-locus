@@ -2,7 +2,7 @@ import { LocusClient, SearchResult } from "./locus-client";
 import { OllamaClient, OllamaMessage } from "./ollama-client";
 
 // ---------------------------------------------------------------------------
-// Action types the agent can emit
+// Actions
 // ---------------------------------------------------------------------------
 
 interface SearchAction {
@@ -14,14 +14,12 @@ interface SearchAction {
 interface OpenFileAction {
 	action: "open_file";
 	thought: string;
-	path: string;
-	reason: string;
+	doc_id: string; // exact doc_id from search results
 }
 
 interface AnswerAction {
 	action: "answer";
 	thought: string;
-	sources?: Array<{ path: string; reason?: string }>;
 }
 
 type AgentAction = SearchAction | OpenFileAction | AnswerAction;
@@ -34,10 +32,11 @@ export type AgentEvent =
 	| { type: "thinking" }
 	| { type: "search"; thought: string; query: string }
 	| { type: "search_results"; query: string; results: SearchResult[] }
-	| { type: "open_file_request"; path: string; reason: string; resolve: (content: string | null) => void }
+	| { type: "open_file"; doc_id: string; source?: string }
+	| { type: "open_file_done"; doc_id: string; source?: string }
 	| { type: "answer_start"; thought: string }
 	| { type: "answer_token"; token: string }
-	| { type: "answer_done"; sources: Array<{ path: string; reason?: string }> }
+	| { type: "answer_done" }
 	| { type: "error"; message: string };
 
 // ---------------------------------------------------------------------------
@@ -45,25 +44,25 @@ export type AgentEvent =
 // ---------------------------------------------------------------------------
 
 const SYSTEM_PROMPT = `You are a research assistant with access to a personal knowledge vault.
-You reason step-by-step and respond with JSON only — no extra text.
+Respond with JSON only — no extra text, no markdown fences.
 
 Available actions:
 
-Search the vault:
-{"thought":"reason for searching","action":"search","query":"search terms"}
+Search the vault (returns excerpts):
+{"thought":"why you're searching","action":"search","query":"search terms"}
 
-Open a full file (only when you know the exact path from a previous search result):
-{"thought":"reason","action":"open_file","path":"exact/path/to/note.md","reason":"one-line reason shown to user"}
+Fetch the FULL content of a specific document from the server (use the doc_id from search results):
+{"thought":"why you need the full document","action":"open_file","doc_id":"exact-doc_id-from-results"}
 
-Signal you are ready to answer (after gathering enough context):
-{"thought":"summary of what you found","action":"answer","sources":[{"path":"file.md","reason":"why relevant"}]}
+Signal you are ready to give your final answer:
+{"thought":"summary of findings","action":"answer"}
 
 Rules:
-- Output valid JSON only — no markdown, no preamble
-- Run at least one search before answering
-- open_file only with an exact path seen in search results
-- answer when you have sufficient context (or after 6 steps)
-- Include relevant sources in the answer action`;
+- Output valid JSON only
+- Run 1–3 searches before answering; use open_file when a chunk isn't enough
+- The doc_id field must be copied exactly from the search results (the id shown as "doc_id:...")
+- After 3 searches you MUST use action:"answer"
+- In your final answer mention the source paths so the user knows which notes to look at`;
 
 // ---------------------------------------------------------------------------
 // Agent
@@ -104,10 +103,20 @@ export class Agent {
 			{ role: "user", content: question },
 		];
 
+		let searchCount = 0;
+
 		for (let step = 0; step < this.maxSteps; step++) {
 			if (this.abort.signal.aborted) return;
 
 			emit({ type: "thinking" });
+
+			// Hard-nudge after 3 searches
+			if (searchCount >= 3) {
+				const last = messages[messages.length - 1];
+				if (last.role === "user" && !last.content.includes("MUST answer")) {
+					last.content += "\n\nYou have searched enough. You MUST use action:\"answer\" now.";
+				}
+			}
 
 			let raw: string;
 			try {
@@ -123,11 +132,11 @@ export class Agent {
 				return;
 			}
 
-			// Add to history so the model sees its own reasoning
 			messages.push({ role: "assistant", content: raw });
 
 			// ---------------------------------------------------------------
 			if (action.action === "search") {
+				searchCount++;
 				emit({ type: "search", thought: action.thought, query: action.query });
 
 				try {
@@ -136,7 +145,7 @@ export class Agent {
 
 					const context = resp.results.length
 						? resp.results
-							.map((r) => `[${r.source ?? r.doc_id}] (score: ${r.score.toFixed(2)})\n${r.text}`)
+							.map((r) => `doc_id:${r.doc_id} source:${r.source ?? "unknown"} (score:${r.score.toFixed(2)})\n${r.text}`)
 							.join("\n---\n")
 						: "No results found.";
 
@@ -153,25 +162,19 @@ export class Agent {
 
 			// ---------------------------------------------------------------
 			} else if (action.action === "open_file") {
-				// Pause loop — wait for user to allow or skip
-				const content = await new Promise<string | null>((resolve) => {
-					emit({
-						type: "open_file_request",
-						path: action.path,
-						reason: action.reason,
-						resolve,
-					});
-				});
+				emit({ type: "open_file", doc_id: action.doc_id });
 
-				if (content !== null) {
+				try {
+					const doc = await this.locus.getDocument(this.space, action.doc_id);
+					emit({ type: "open_file_done", doc_id: action.doc_id, source: doc.source });
 					messages.push({
 						role: "user",
-						content: `Full content of "${action.path}":\n${content}`,
+						content: `Full content of document "${action.doc_id}" (${doc.source ?? "unknown"}):\n${doc.text}`,
 					});
-				} else {
+				} catch (err) {
 					messages.push({
 						role: "user",
-						content: `User declined to open "${action.path}". Continue without it.`,
+						content: `Failed to fetch document "${action.doc_id}": ${(err as Error).message}`,
 					});
 				}
 
@@ -179,14 +182,14 @@ export class Agent {
 			} else if (action.action === "answer") {
 				emit({ type: "answer_start", thought: action.thought });
 
-				// Stream a synthesis call — model writes freely, not constrained to JSON
 				const synthMessages: OllamaMessage[] = [
 					...messages,
 					{
 						role: "user",
 						content:
-							"Now write your final answer in plain prose. Be clear and specific. " +
-							"Reference exact note titles where relevant. Do not output JSON.",
+							"Now write your answer in plain prose. Be specific. " +
+							"Mention the source paths of the notes you referenced so the user can find them. " +
+							"Do not output JSON.",
 					},
 				];
 
@@ -204,7 +207,7 @@ export class Agent {
 					return;
 				}
 
-				emit({ type: "answer_done", sources: action.sources ?? [] });
+				emit({ type: "answer_done" });
 				return;
 			}
 		}
@@ -212,16 +215,8 @@ export class Agent {
 		emit({ type: "error", message: "Reached the step limit without an answer." });
 	}
 
-	// -------------------------------------------------------------------------
-	// Helpers
-	// -------------------------------------------------------------------------
-
 	private parse(raw: string): AgentAction | null {
-		try {
-			return JSON.parse(raw) as AgentAction;
-		} catch { /* fall through */ }
-
-		// Try to fish out a JSON object if the model added surrounding text
+		try { return JSON.parse(raw) as AgentAction; } catch { /* fall through */ }
 		const match = raw.match(/\{[\s\S]*\}/);
 		if (match) {
 			try { return JSON.parse(match[0]) as AgentAction; } catch { /* fall through */ }

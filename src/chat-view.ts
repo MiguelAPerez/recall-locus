@@ -1,4 +1,4 @@
-import { ItemView, WorkspaceLeaf, TFile, MarkdownRenderer, Component } from "obsidian";
+import { ItemView, WorkspaceLeaf, TFile, MarkdownRenderer, Component } from "obsidian"; // TFile used in openFile()
 import type LocusPlugin from "./main";
 import { Agent, AgentEvent } from "./agent";
 import { SearchResult } from "./locus-client";
@@ -7,19 +7,18 @@ export const VIEW_TYPE_LOCUS_CHAT = "locus-chat-view";
 
 interface Turn {
 	role: "user" | "assistant";
-	content: string; // user text or final answer text
+	content: string;
 	steps?: StepRecord[];
-	sources?: Array<{ path: string; reason?: string }>;
 	error?: string;
 }
 
 interface StepRecord {
-	type: "search" | "open_file_request";
+	type: "search" | "open_file";
 	thought: string;
 	query?: string;
+	doc_id?: string;
+	source?: string;
 	results?: SearchResult[];
-	path?: string;
-	reason?: string;
 	resultCount?: number;
 }
 
@@ -117,7 +116,7 @@ export class LocusChatView extends ItemView {
 		this.addUserTurn(question);
 		this.setRunning(true);
 
-		const turn: Turn = { role: "assistant", content: "", steps: [], sources: [] };
+		const turn: Turn = { role: "assistant", content: "", steps: [] };
 		this.turns.push(turn);
 		const bubble = this.renderAssistantBubble(turn);
 
@@ -159,16 +158,18 @@ export class LocusChatView extends ItemView {
 				break;
 			}
 
-			case "open_file_request": {
+			case "open_file": {
 				bubble.setThinking(false);
-				const step: StepRecord = {
-					type: "open_file_request",
-					thought: "",
-					path: event.path,
-					reason: event.reason,
-				};
+				const step: StepRecord = { type: "open_file", thought: "", doc_id: event.doc_id };
 				turn.steps!.push(step);
-				bubble.addOpenFileRequest(event.path, event.reason, event.resolve);
+				bubble.addOpenFileStep(step);
+				break;
+			}
+
+			case "open_file_done": {
+				const step = turn.steps!.find((s) => s.type === "open_file" && s.doc_id === event.doc_id);
+				if (step) step.source = event.source;
+				bubble.resolveOpenFileStep(event.doc_id, event.source);
 				break;
 			}
 
@@ -184,8 +185,7 @@ export class LocusChatView extends ItemView {
 				break;
 
 			case "answer_done":
-				turn.sources = event.sources;
-				bubble.finishAnswer(event.sources, (path) => this.openFile(path));
+				bubble.finishAnswer((path) => this.openFile(path));
 				break;
 
 			case "error":
@@ -310,42 +310,21 @@ class AssistantBubble extends Component {
 		el.toggleClass("locus-step-empty", count === 0);
 	}
 
-	addOpenFileRequest(path: string, reason: string, resolve: (content: string | null) => void) {
-		const el = this.stepsBody.createDiv("locus-step locus-step-openfile");
+	addOpenFileStep(step: StepRecord) {
+		const el = this.stepsBody.createDiv("locus-step");
+		el.dataset.docId = step.doc_id ?? "";
 		el.createSpan({ text: "📄", cls: "locus-step-icon" });
-		const info = el.createDiv("locus-step-openfile-info");
-		info.createDiv({ text: `Open: ${path.split("/").pop()}`, cls: "locus-step-openfile-name" });
-		info.createDiv({ text: reason, cls: "locus-step-openfile-reason" });
-
-		const btnRow = el.createDiv("locus-step-openfile-btns");
-		const allow = btnRow.createEl("button", { text: "Allow", cls: "locus-allow-btn" });
-		const skip = btnRow.createEl("button", { text: "Skip", cls: "locus-skip-btn" });
-
-		allow.addEventListener("click", async () => {
-			allow.disabled = true; skip.disabled = true;
-			// Read the file and resolve the promise
-			const file = (this.app as { vault: { getAbstractFileByPath: (p: string) => unknown } })
-				.vault.getAbstractFileByPath(path) as TFile | null;
-			if (file instanceof TFile) {
-				const content = await (this.app as { vault: { read: (f: TFile) => Promise<string> } })
-					.vault.read(file);
-				el.addClass("locus-step-allowed");
-				allow.setText("✓ Opened");
-				resolve(content);
-			} else {
-				allow.setText("Not found");
-				resolve(null);
-			}
-		});
-
-		skip.addEventListener("click", () => {
-			allow.disabled = true; skip.disabled = true;
-			el.addClass("locus-step-skipped");
-			skip.setText("Skipped");
-			resolve(null);
-		});
-
+		el.createSpan({ text: "fetching full document…", cls: "locus-step-query locus-step-fetching" });
+		this.stepEls.set(`open_file:${step.doc_id}`, el);
 		this.updateStepsToggle();
+	}
+
+	resolveOpenFileStep(doc_id: string, source?: string) {
+		const el = this.stepEls.get(`open_file:${doc_id}`);
+		if (!el) return;
+		const label = el.querySelector(".locus-step-fetching") as HTMLElement | null;
+		if (label) label.setText(source ?? doc_id);
+		el.createSpan({ text: "✓", cls: "locus-step-badge" });
 	}
 
 	collapseSteps() {
@@ -365,15 +344,11 @@ class AssistantBubble extends Component {
 		this.view["scrollToBottom"]();
 	}
 
-	finishAnswer(
-		sources: Array<{ path: string; reason?: string }>,
-		onOpen: (path: string) => void
-	) {
+	finishAnswer(onOpen: (path: string) => void) {
 		const raw = this.answerEl.getText();
 		this.answerEl.empty();
 		this.answerEl.removeClass("locus-answer-streaming");
 
-		// Render markdown
 		MarkdownRenderer.render(
 			(this.app as Parameters<typeof MarkdownRenderer.render>[0]),
 			raw,
@@ -382,17 +357,18 @@ class AssistantBubble extends Component {
 			this
 		);
 
-		// Sources
-		if (sources.length) {
+		// Extract any .md paths mentioned in the answer and render as open buttons
+		const paths = extractPaths(raw);
+		if (paths.length) {
 			this.sourcesEl.empty();
-			this.sourcesEl.createDiv({ text: "Sources", cls: "locus-sources-label" });
-			for (const src of sources) {
+			this.sourcesEl.createDiv({ text: "Open", cls: "locus-sources-label" });
+			for (const p of paths) {
 				const btn = this.sourcesEl.createEl("button", {
-					text: src.path.split("/").pop()?.replace(/\.md$/, "") ?? src.path,
+					text: p.split("/").pop()?.replace(/\.md$/, "") ?? p,
 					cls: "locus-source-btn",
 				});
-				if (src.reason) btn.title = src.reason;
-				btn.addEventListener("click", () => onOpen(src.path));
+				btn.title = p;
+				btn.addEventListener("click", () => onOpen(p));
 			}
 		}
 
@@ -408,4 +384,20 @@ class AssistantBubble extends Component {
 		this.stepsToggle.setText(count ? `▶ ${count} step${count !== 1 ? "s" : ""}` : "");
 		this.stepsEl.style.display = count ? "" : "none";
 	}
+}
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+/** Pull every *.md path out of the answer text so we can render open buttons. */
+function extractPaths(text: string): string[] {
+	const seen = new Set<string>();
+	const results: string[] = [];
+	// Match things like: Notes/Foo.md  or  "path/to/file.md"
+	for (const m of text.matchAll(/[\w./ -]+\.md/g)) {
+		const p = m[0].trim();
+		if (!seen.has(p)) { seen.add(p); results.push(p); }
+	}
+	return results;
 }

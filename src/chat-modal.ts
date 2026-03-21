@@ -20,7 +20,6 @@ export class LocusChatModal extends Modal {
 	// Accumulated state for "open in panel"
 	private lastQuestion = "";
 	private lastAnswer = "";
-	private lastSources: Array<{ path: string; reason?: string }> = [];
 
 	constructor(app: App, plugin: LocusPlugin) {
 		super(app);
@@ -115,7 +114,6 @@ export class LocusChatModal extends Modal {
 
 		this.lastQuestion = question;
 		this.lastAnswer = "";
-		this.lastSources = [];
 
 		this.stepsEl.empty();
 		this.answerEl.empty();
@@ -158,30 +156,16 @@ export class LocusChatModal extends Modal {
 				break;
 			}
 
-			case "open_file_request": {
-				const row = this.stepsEl.createDiv("locus-modal-step locus-step-openfile");
-				row.createSpan({ text: `📄 ${event.path.split("/").pop()}` });
-				const info = row.createSpan({ text: ` — ${event.reason}`, cls: "locus-step-openfile-reason" });
-				const allow = row.createEl("button", { text: "Allow", cls: "locus-allow-btn" });
-				const skip = row.createEl("button", { text: "Skip", cls: "locus-skip-btn" });
+			case "open_file": {
+				const row = this.stepsEl.createDiv("locus-modal-step");
+				row.dataset.docId = event.doc_id;
+				row.createSpan({ text: "📄 fetching full document…" });
+				break;
+			}
 
-				allow.addEventListener("click", async () => {
-					allow.disabled = true; skip.disabled = true;
-					const file = this.app.vault.getAbstractFileByPath(event.path);
-					if (file instanceof TFile) {
-						const content = await this.app.vault.read(file);
-						allow.setText("✓");
-						event.resolve(content);
-					} else {
-						allow.setText("Not found");
-						event.resolve(null);
-					}
-				});
-				skip.addEventListener("click", () => {
-					allow.disabled = true; skip.disabled = true;
-					skip.setText("Skipped");
-					event.resolve(null);
-				});
+			case "open_file_done": {
+				const row = this.stepsEl.querySelector(`[data-doc-id="${event.doc_id}"]`) as HTMLElement | null;
+				if (row) row.setText(`📄 ${event.source ?? event.doc_id} ✓`);
 				break;
 			}
 
@@ -197,26 +181,23 @@ export class LocusChatModal extends Modal {
 				break;
 
 			case "answer_done": {
-				this.lastSources = event.sources;
 				const raw = this.answerEl.getText();
+				this.lastAnswer = raw;
 				this.answerEl.empty();
 				this.answerEl.removeClass("locus-answer-streaming");
 
 				const comp = new Component();
 				MarkdownRenderer.render(this.app, raw, this.answerEl, "", comp);
 
-				if (event.sources.length) {
-					this.sourcesEl.createDiv({ text: "Sources", cls: "locus-sources-label" });
-					for (const src of event.sources) {
-						const btn = this.sourcesEl.createEl("button", {
-							text: src.path.split("/").pop()?.replace(/\.md$/, "") ?? src.path,
-							cls: "locus-source-btn",
-						});
-						if (src.reason) btn.title = src.reason;
-						btn.addEventListener("click", () => {
-							this.openFile(src.path);
-						});
-					}
+				// Extract .md paths mentioned in the answer and render open buttons
+				for (const m of raw.matchAll(/[\w./ -]+\.md/g)) {
+					const p = m[0].trim();
+					const btn = this.sourcesEl.createEl("button", {
+						text: p.split("/").pop()?.replace(/\.md$/, "") ?? p,
+						cls: "locus-source-btn",
+					});
+					btn.title = p;
+					btn.addEventListener("click", () => this.openFile(p));
 				}
 
 				this.setStatus("");

@@ -95,6 +95,15 @@ export class LocusClient {
 		return res.json;
 	}
 
+	async getDocument(space: string, docId: string): Promise<{ text: string; source?: string }> {
+		const res = await requestUrl({
+			url: `${this.baseUrl}/spaces/${encodeURIComponent(space)}/documents/${encodeURIComponent(docId)}`,
+			throw: false,
+		});
+		if (res.status !== 200) throw new Error(`Failed to get document "${docId}": ${res.status}`);
+		return res.json;
+	}
+
 	async deleteDocument(space: string, docId: string): Promise<void> {
 		const res = await requestUrl({
 			url: `${this.baseUrl}/spaces/${encodeURIComponent(space)}/documents/${encodeURIComponent(docId)}`,
