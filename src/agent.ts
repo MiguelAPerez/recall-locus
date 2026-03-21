@@ -62,7 +62,7 @@ Rules:
 - Run 1–3 searches before answering; use open_file when a chunk isn't enough
 - The doc_id field must be copied exactly from the search results (the id shown as "doc_id:...")
 - After 3 searches you MUST use action:"answer"
-- In your final answer mention the source paths so the user knows which notes to look at`;
+- In your final answer reference notes by their file name (the "File:" value), never by id or UUID`;
 
 // ---------------------------------------------------------------------------
 // Agent
@@ -145,7 +145,10 @@ export class Agent {
 
 					const context = resp.results.length
 						? resp.results
-							.map((r) => `doc_id:${r.doc_id} source:${r.source ?? "unknown"} (score:${r.score.toFixed(2)})\n${r.text}`)
+							.map((r) => {
+								const name = r.source ?? "unknown";
+								return `File: ${name} [id:${r.doc_id}] (score:${r.score.toFixed(2)})\n${r.text}`;
+							})
 							.join("\n---\n")
 						: "No results found.";
 
@@ -188,8 +191,8 @@ export class Agent {
 						role: "user",
 						content:
 							"Now write your answer in plain prose. Be specific. " +
-							"Mention the source paths of the notes you referenced so the user can find them. " +
-							"Do not output JSON.",
+							"When referencing a note, use its file name (the 'File:' value from search results), " +
+							"never a doc id or UUID. Do not output JSON.",
 					},
 				];
 

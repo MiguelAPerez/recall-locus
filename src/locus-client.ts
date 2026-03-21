@@ -1,10 +1,18 @@
 import { requestUrl } from "obsidian";
 
+interface RawSearchResult {
+	chunk_id: string;
+	doc_id: string;
+	text: string;
+	score: number;
+	metadata?: { source?: string; filename?: string; doc_id?: string };
+}
+
 export interface SearchResult {
 	doc_id: string;
 	score: number;
 	text: string;
-	source?: string;
+	source?: string; // lifted from metadata.source or metadata.filename
 	space: string;
 }
 
@@ -122,6 +130,19 @@ export class LocusClient {
 			throw: false,
 		});
 		if (res.status !== 200) throw new Error(`Search failed: ${res.status}`);
-		return res.json;
+
+		const raw = res.json as { query: string; space: string; results: RawSearchResult[] };
+		return {
+			query: raw.query,
+			space: raw.space,
+			results: raw.results.map((r) => ({
+				doc_id: r.doc_id,
+				score: r.score,
+				text: r.text,
+				space: raw.space,
+				// source lives inside metadata — prefer source over filename
+				source: r.metadata?.source || r.metadata?.filename || undefined,
+			})),
+		};
 	}
 }

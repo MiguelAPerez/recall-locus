@@ -381,7 +381,8 @@ class AssistantBubble extends Component {
 
 	private updateStepsToggle() {
 		const count = this.stepsBody.children.length;
-		this.stepsToggle.setText(count ? `▶ ${count} step${count !== 1 ? "s" : ""}` : "");
+		// Arrow comes from CSS ::before — don't duplicate it in the text
+		this.stepsToggle.setText(count ? `${count} step${count !== 1 ? "s" : ""}` : "");
 		this.stepsEl.style.display = count ? "" : "none";
 	}
 }
