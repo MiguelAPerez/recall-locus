@@ -1,3 +1,5 @@
+import { Platform, requestUrl } from "obsidian";
+
 export interface OllamaMessage {
 	role: "system" | "user" | "assistant";
 	content: string;
@@ -12,8 +14,8 @@ export class OllamaClient {
 
 	async health(): Promise<boolean> {
 		try {
-			const res = await fetch(`${this.baseUrl}/api/tags`);
-			return res.ok;
+			const res = await requestUrl({ url: `${this.baseUrl}/api/tags`, throw: false });
+			return res.status === 200;
 		} catch {
 			return false;
 		}
@@ -21,10 +23,9 @@ export class OllamaClient {
 
 	async listModels(): Promise<string[]> {
 		try {
-			const res = await fetch(`${this.baseUrl}/api/tags`);
-			if (!res.ok) return [];
-			const data = await res.json();
-			return (data.models ?? []).map((m: { name: string }) => m.name);
+			const res = await requestUrl({ url: `${this.baseUrl}/api/tags`, throw: false });
+			if (res.status !== 200) return [];
+			return (res.json.models ?? []).map((m: { name: string }) => m.name);
 		} catch {
 			return [];
 		}
@@ -35,23 +36,31 @@ export class OllamaClient {
 		const body: Record<string, unknown> = { model, messages, stream: false };
 		if (format) body.format = format;
 
-		const res = await fetch(`${this.baseUrl}/api/chat`, {
+		const res = await requestUrl({
+			url: `${this.baseUrl}/api/chat`,
 			method: "POST",
 			headers: { "Content-Type": "application/json" },
 			body: JSON.stringify(body),
+			throw: false,
 		});
-		if (!res.ok) throw new Error(`Ollama error: ${res.status} ${res.statusText}`);
-		const data = await res.json();
-		return data.message?.content ?? "";
+		if (res.status < 200 || res.status >= 300) throw new Error(`Ollama error: ${res.status}`);
+		return res.json.message?.content ?? "";
 	}
 
-	/** Streaming call — fires onToken for each chunk, returns full accumulated text. */
+	/** Streaming call — fires onToken for each chunk, returns full accumulated text.
+	 *  Falls back to a single non-streaming call on mobile where ReadableStream is unreliable. */
 	async chatStream(
 		messages: OllamaMessage[],
 		model: string,
 		onToken: (token: string) => void,
 		signal?: AbortSignal
 	): Promise<string> {
+		if (Platform.isMobile) {
+			const full = await this.chat(messages, model);
+			onToken(full);
+			return full;
+		}
+
 		const res = await fetch(`${this.baseUrl}/api/chat`, {
 			method: "POST",
 			headers: { "Content-Type": "application/json" },
