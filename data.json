@@ -1,0 +1,12 @@
+{
+  "settings": {
+    "locusUrl": "http://localhost:8000",
+    "spaceName": "notebook",
+    "autoSync": true,
+    "syncOnStartup": true,
+    "defaultResults": 5
+  },
+  "syncData": {
+    "files": {}
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "id": "locus-obsidian",
+  "name": "Locus",
+  "version": "0.1.0",
+  "minAppVersion": "0.15.0",
+  "description": "Link your vault to a Locus space and search it with natural language.",
+  "author": "MiguelAPerez",
+  "authorUrl": "https://github.com/MiguelAPerez/locus",
+  "isDesktopOnly": false
+}
