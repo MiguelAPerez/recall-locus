@@ -1,5 +1,9 @@
 /* RecallLocus Plugin Styles */
 
+.rl-hidden {
+	display: none !important;
+}
+
 .rl-panel {
 	display: flex;
 	flex-direction: column;

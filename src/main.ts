@@ -1,4 +1,4 @@
-import { Plugin, Notice, TFile, TAbstractFile } from "obsidian";
+import { Plugin, TFile, TAbstractFile } from "obsidian";
 import { RecallLocusSettings, DEFAULT_SETTINGS, RecallLocusSettingTab } from "./settings";
 import { SyncEngine, SyncData } from "./sync-engine";
 import { RecallLocusChatView as SearchView, VIEW_TYPE_RL_SEARCH } from "./chat-panel";
@@ -36,26 +36,25 @@ export default class RecallLocusPlugin extends Plugin {
 		this.setStatus("idle");
 
 		// Ribbon icons
-		this.addRibbonIcon("search", "RecallLocus Search", () => this.activateView(VIEW_TYPE_RL_SEARCH));
-		this.addRibbonIcon("message-square", "RecallLocus Chat", () => this.activateView(VIEW_TYPE_RL_CHAT));
+		this.addRibbonIcon("search", "RecallLocus search", () => { void this.activateView(VIEW_TYPE_RL_SEARCH); });
+		this.addRibbonIcon("message-square", "RecallLocus chat", () => { void this.activateView(VIEW_TYPE_RL_CHAT); });
 
 		// Commands
 		this.addCommand({
 			id: "open-search",
 			name: "Open search panel",
-			callback: () => this.activateView(VIEW_TYPE_RL_SEARCH),
+			callback: () => { void this.activateView(VIEW_TYPE_RL_SEARCH); },
 		});
 
 		this.addCommand({
 			id: "open-chat",
 			name: "Open chat panel",
-			callback: () => this.activateView(VIEW_TYPE_RL_CHAT),
+			callback: () => { void this.activateView(VIEW_TYPE_RL_CHAT); },
 		});
 
 		this.addCommand({
 			id: "ask",
 			name: "Ask (quick modal)",
-			hotkeys: [{ modifiers: ["Mod", "Shift"], key: "l" }],
 			callback: () => new RecallLocusChatModal(this.app, this).open(),
 		});
 
@@ -71,7 +70,7 @@ export default class RecallLocusPlugin extends Plugin {
 		this.registerEvent(
 			this.app.vault.on("create", (file: TAbstractFile) => {
 				if (file instanceof TFile && file.extension === "md") {
-					this.syncEngine.syncFile(file);
+					void this.syncEngine.syncFile(file);
 				}
 			})
 		);
@@ -79,7 +78,7 @@ export default class RecallLocusPlugin extends Plugin {
 		this.registerEvent(
 			this.app.vault.on("modify", (file: TAbstractFile) => {
 				if (file instanceof TFile && file.extension === "md") {
-					this.syncEngine.syncFile(file);
+					void this.syncEngine.syncFile(file);
 				}
 			})
 		);
@@ -87,7 +86,7 @@ export default class RecallLocusPlugin extends Plugin {
 		this.registerEvent(
 			this.app.vault.on("delete", (file: TAbstractFile) => {
 				if (file instanceof TFile && file.extension === "md") {
-					this.syncEngine.deleteFile(file.path);
+					void this.syncEngine.deleteFile(file.path);
 				}
 			})
 		);
@@ -95,22 +94,21 @@ export default class RecallLocusPlugin extends Plugin {
 		this.registerEvent(
 			this.app.vault.on("rename", (file: TAbstractFile, oldPath: string) => {
 				if (file instanceof TFile && file.extension === "md") {
-					this.syncEngine.renameFile(file, oldPath);
+					void this.syncEngine.renameFile(file, oldPath);
 				}
 			})
 		);
 
 		// Startup sync
-		this.app.workspace.onLayoutReady(async () => {
+		this.app.workspace.onLayoutReady(() => {
 			if (this.settings.syncOnStartup && this.settings.spaceName) {
-				await this.syncEngine.syncVault();
+				void this.syncEngine.syncVault();
 			}
 		});
 	}
 
-	async onunload(): Promise<void> {
-		this.app.workspace.detachLeavesOfType(VIEW_TYPE_RL_SEARCH);
-		this.app.workspace.detachLeavesOfType(VIEW_TYPE_RL_CHAT);
+	onunload(): void {
+		// Obsidian cleans up registered views automatically
 	}
 
 	// ---------------------------------------------------------------------------
@@ -159,13 +157,13 @@ export default class RecallLocusPlugin extends Plugin {
 	private async activateView(type: string): Promise<void> {
 		const existing = this.app.workspace.getLeavesOfType(type);
 		if (existing.length) {
-			this.app.workspace.revealLeaf(existing[0]);
+			await this.app.workspace.revealLeaf(existing[0]);
 			return;
 		}
 		const leaf = this.app.workspace.getRightLeaf(false);
 		if (leaf) {
 			await leaf.setViewState({ type, active: true });
-			this.app.workspace.revealLeaf(leaf);
+			await this.app.workspace.revealLeaf(leaf);
 		}
 	}
 }

@@ -35,7 +35,7 @@ export class RecallLocusSettingTab extends PluginSettingTab {
 		const { containerEl } = this;
 		containerEl.empty();
 
-		containerEl.createEl("h2", { text: "RecallLocus" });
+		new Setting(containerEl).setName("RecallLocus").setHeading();
 
 		new Setting(containerEl)
 			.setName("RecallLocus URL")
@@ -108,7 +108,7 @@ export class RecallLocusSettingTab extends PluginSettingTab {
 					})
 			);
 
-		containerEl.createEl("h3", { text: "Chat" });
+		new Setting(containerEl).setName("Chat").setHeading();
 
 		new Setting(containerEl)
 			.setName("Ollama URL")
@@ -152,7 +152,7 @@ export class RecallLocusSettingTab extends PluginSettingTab {
 				})
 			);
 
-		containerEl.createEl("h3", { text: "Actions" });
+		new Setting(containerEl).setName("Actions").setHeading();
 
 		new Setting(containerEl)
 			.setName("Full vault sync")

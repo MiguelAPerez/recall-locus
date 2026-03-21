@@ -1,7 +1,7 @@
 import { App, Modal, TFile, MarkdownRenderer, Component } from "obsidian";
 import type RecallLocusPlugin from "./main";
 import { Agent, AgentEvent } from "./agent";
-import { VIEW_TYPE_RL_CHAT, RecallLocusChatView } from "./chat-view";
+import { VIEW_TYPE_RL_CHAT } from "./chat-view";
 
 export class RecallLocusChatModal extends Modal {
 	private plugin: RecallLocusPlugin;
@@ -63,7 +63,7 @@ export class RecallLocusChatModal extends Modal {
 		this.inputEl.addEventListener("keydown", (e) => {
 			if (e.key === "Enter" && !e.shiftKey) {
 				e.preventDefault();
-				this.submit();
+				void this.submit();
 			}
 			if (e.key === "Escape") this.close();
 		});
@@ -71,10 +71,10 @@ export class RecallLocusChatModal extends Modal {
 		// Buttons
 		const btnRow = contentEl.createDiv("rl-modal-btn-row");
 		this.submitBtn = btnRow.createEl("button", { text: "Ask", cls: "rl-send-btn" });
-		this.submitBtn.addEventListener("click", () => this.submit());
+		this.submitBtn.addEventListener("click", () => { void this.submit(); });
 
 		this.stopBtn = btnRow.createEl("button", { text: "Stop", cls: "rl-stop-btn" });
-		this.stopBtn.style.display = "none";
+		this.stopBtn.hide();
 		this.stopBtn.addEventListener("click", () => {
 			this.agent?.cancel();
 			this.setRunning(false);
@@ -84,8 +84,8 @@ export class RecallLocusChatModal extends Modal {
 			text: "Open in chat panel",
 			cls: "rl-open-panel-btn",
 		});
-		this.openPanelBtn.style.display = "none";
-		this.openPanelBtn.addEventListener("click", () => this.openInPanel());
+		this.openPanelBtn.hide();
+		this.openPanelBtn.addEventListener("click", () => { void this.openInPanel(); });
 
 		// Status
 		this.statusEl = contentEl.createDiv("rl-modal-status");
@@ -118,7 +118,7 @@ export class RecallLocusChatModal extends Modal {
 		this.stepsEl.empty();
 		this.answerEl.empty();
 		this.sourcesEl.empty();
-		this.openPanelBtn.style.display = "none";
+		this.openPanelBtn.hide();
 		this.setRunning(true);
 		this.setStatus("Planning…");
 
@@ -164,8 +164,8 @@ export class RecallLocusChatModal extends Modal {
 			}
 
 			case "open_file_done": {
-				const row = this.stepsEl.querySelector(`[data-doc-id="${event.doc_id}"]`) as HTMLElement | null;
-				if (row) row.setText(`📄 ${event.source ?? event.doc_id} ✓`);
+				const row = this.stepsEl.querySelector(`[data-doc-id="${event.doc_id}"]`);
+				if (row) row.textContent = `📄 ${event.source ?? event.doc_id} ✓`;
 				break;
 			}
 
@@ -197,11 +197,11 @@ export class RecallLocusChatModal extends Modal {
 						cls: "rl-source-btn",
 					});
 					btn.title = p;
-					btn.addEventListener("click", () => this.openFile(p));
+					btn.addEventListener("click", () => { void this.openFile(p); });
 				}
 
 				this.setStatus("");
-				this.openPanelBtn.style.display = "";
+				this.openPanelBtn.show();
 				break;
 			}
 
@@ -224,8 +224,8 @@ export class RecallLocusChatModal extends Modal {
 	}
 
 	private setRunning(running: boolean) {
-		this.submitBtn.style.display = running ? "none" : "";
-		this.stopBtn.style.display = running ? "" : "none";
+		if (running) { this.submitBtn.hide(); this.stopBtn.show(); }
+		else { this.submitBtn.show(); this.stopBtn.hide(); }
 		this.inputEl.disabled = running;
 	}
 
