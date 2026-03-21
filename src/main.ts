@@ -1,7 +1,9 @@
 import { Plugin, Notice, TFile, TAbstractFile } from "obsidian";
 import { LocusSettings, DEFAULT_SETTINGS, LocusSettingTab } from "./settings";
 import { SyncEngine, SyncData } from "./sync-engine";
-import { LocusChatView, VIEW_TYPE_LOCUS } from "./chat-panel";
+import { LocusChatView as SearchView, VIEW_TYPE_LOCUS } from "./chat-panel";
+import { LocusChatView, VIEW_TYPE_LOCUS_CHAT } from "./chat-view";
+import { LocusChatModal } from "./chat-modal";
 
 interface PluginData {
 	settings: LocusSettings;
@@ -20,8 +22,9 @@ export default class LocusPlugin extends Plugin {
 
 		this.syncEngine = new SyncEngine(this);
 
-		// Register the chat panel view
-		this.registerView(VIEW_TYPE_LOCUS, (leaf) => new LocusChatView(leaf, this));
+		// Register views
+		this.registerView(VIEW_TYPE_LOCUS, (leaf) => new SearchView(leaf, this));
+		this.registerView(VIEW_TYPE_LOCUS_CHAT, (leaf) => new LocusChatView(leaf, this));
 
 		// Settings tab
 		this.addSettingTab(new LocusSettingTab(this.app, this));
@@ -30,14 +33,28 @@ export default class LocusPlugin extends Plugin {
 		this.statusBarItem = this.addStatusBarItem();
 		this.setStatus("idle");
 
-		// Ribbon icon — opens the chat panel
-		this.addRibbonIcon("search", "Locus Search", () => this.activateChatPanel());
+		// Ribbon icons
+		this.addRibbonIcon("search", "Locus Search", () => this.activateView(VIEW_TYPE_LOCUS));
+		this.addRibbonIcon("message-square", "Locus Chat", () => this.activateView(VIEW_TYPE_LOCUS_CHAT));
 
 		// Commands
 		this.addCommand({
 			id: "open-search",
 			name: "Open search panel",
-			callback: () => this.activateChatPanel(),
+			callback: () => this.activateView(VIEW_TYPE_LOCUS),
+		});
+
+		this.addCommand({
+			id: "open-chat",
+			name: "Open chat panel",
+			callback: () => this.activateView(VIEW_TYPE_LOCUS_CHAT),
+		});
+
+		this.addCommand({
+			id: "ask",
+			name: "Ask (quick modal)",
+			hotkeys: [{ modifiers: ["Mod", "Shift"], key: "l" }],
+			callback: () => new LocusChatModal(this.app, this).open(),
 		});
 
 		this.addCommand({
@@ -91,11 +108,12 @@ export default class LocusPlugin extends Plugin {
 
 	async onunload(): Promise<void> {
 		this.app.workspace.detachLeavesOfType(VIEW_TYPE_LOCUS);
+		this.app.workspace.detachLeavesOfType(VIEW_TYPE_LOCUS_CHAT);
 	}
 
-	// -------------------------------------------------------------------------
+	// ---------------------------------------------------------------------------
 	// Data persistence
-	// -------------------------------------------------------------------------
+	// ---------------------------------------------------------------------------
 
 	async loadSettings(): Promise<void> {
 		const data = (await this.loadData()) as Partial<PluginData> | null;
@@ -106,9 +124,11 @@ export default class LocusPlugin extends Plugin {
 	async saveSettings(): Promise<void> {
 		await this.saveData({ settings: this.settings, syncData: this.syncData });
 		this.syncEngine?.refreshClient();
-		// Refresh the chat panel client too
 		this.app.workspace.getLeavesOfType(VIEW_TYPE_LOCUS).forEach((leaf) => {
-			(leaf.view as LocusChatView).refreshClient();
+			(leaf.view as SearchView).refreshClient();
+		});
+		this.app.workspace.getLeavesOfType(VIEW_TYPE_LOCUS_CHAT).forEach((leaf) => {
+			(leaf.view as LocusChatView).refreshSettings();
 		});
 	}
 
@@ -116,9 +136,9 @@ export default class LocusPlugin extends Plugin {
 		await this.saveData({ settings: this.settings, syncData: this.syncData });
 	}
 
-	// -------------------------------------------------------------------------
+	// ---------------------------------------------------------------------------
 	// Helpers
-	// -------------------------------------------------------------------------
+	// ---------------------------------------------------------------------------
 
 	setStatus(state: "idle" | "syncing" | "error"): void {
 		const icons: Record<string, string> = {
@@ -129,15 +149,15 @@ export default class LocusPlugin extends Plugin {
 		this.statusBarItem.setText(icons[state] ?? "Locus");
 	}
 
-	private async activateChatPanel(): Promise<void> {
-		const existing = this.app.workspace.getLeavesOfType(VIEW_TYPE_LOCUS);
+	private async activateView(type: string): Promise<void> {
+		const existing = this.app.workspace.getLeavesOfType(type);
 		if (existing.length) {
 			this.app.workspace.revealLeaf(existing[0]);
 			return;
 		}
 		const leaf = this.app.workspace.getRightLeaf(false);
 		if (leaf) {
-			await leaf.setViewState({ type: VIEW_TYPE_LOCUS, active: true });
+			await leaf.setViewState({ type, active: true });
 			this.app.workspace.revealLeaf(leaf);
 		}
 	}

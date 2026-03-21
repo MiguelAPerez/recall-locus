@@ -4,7 +4,9 @@
     "spaceName": "notebook",
     "autoSync": true,
     "syncOnStartup": true,
-    "defaultResults": 5
+    "defaultResults": 5,
+    "ollamaUrl": "https://ollama.miguelaperez.dev",
+    "chatModel": "qwen3.5:9b"
   },
   "syncData": {
     "files": {}

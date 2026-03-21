@@ -1,6 +1,7 @@
 import { App, PluginSettingTab, Setting, Notice } from "obsidian";
 import type LocusPlugin from "./main";
 import { LocusClient } from "./locus-client";
+import { OllamaClient } from "./ollama-client";
 
 export interface LocusSettings {
 	locusUrl: string;
@@ -8,6 +9,8 @@ export interface LocusSettings {
 	autoSync: boolean;
 	syncOnStartup: boolean;
 	defaultResults: number;
+	ollamaUrl: string;
+	chatModel: string;
 }
 
 export const DEFAULT_SETTINGS: LocusSettings = {
@@ -16,6 +19,8 @@ export const DEFAULT_SETTINGS: LocusSettings = {
 	autoSync: true,
 	syncOnStartup: true,
 	defaultResults: 5,
+	ollamaUrl: "http://localhost:11434",
+	chatModel: "",
 };
 
 export class LocusSettingTab extends PluginSettingTab {
@@ -101,6 +106,50 @@ export class LocusSettingTab extends PluginSettingTab {
 						this.plugin.settings.defaultResults = value;
 						await this.plugin.saveSettings();
 					})
+			);
+
+		containerEl.createEl("h3", { text: "Chat" });
+
+		new Setting(containerEl)
+			.setName("Ollama URL")
+			.setDesc("Base URL of your Ollama instance.")
+			.addText((text) =>
+				text
+					.setPlaceholder("http://localhost:11434")
+					.setValue(this.plugin.settings.ollamaUrl)
+					.onChange(async (value) => {
+						this.plugin.settings.ollamaUrl = value.trim();
+						await this.plugin.saveSettings();
+					})
+			)
+			.addButton((btn) =>
+				btn
+					.setButtonText("Test")
+					.onClick(async () => {
+						const client = new OllamaClient(this.plugin.settings.ollamaUrl);
+						const ok = await client.health();
+						new Notice(ok ? "Connected to Ollama!" : "Could not reach Ollama.");
+					})
+			);
+
+		new Setting(containerEl)
+			.setName("Chat model")
+			.setDesc("Ollama model to use for the chat agent (e.g. llama3.2).")
+			.addText((text) =>
+				text
+					.setPlaceholder("llama3.2")
+					.setValue(this.plugin.settings.chatModel)
+					.onChange(async (value) => {
+						this.plugin.settings.chatModel = value.trim();
+						await this.plugin.saveSettings();
+					})
+			)
+			.addButton((btn) =>
+				btn.setButtonText("List models").onClick(async () => {
+					const client = new OllamaClient(this.plugin.settings.ollamaUrl);
+					const models = await client.listModels();
+					new Notice(models.length ? models.join(", ") : "No models found.");
+				})
 			);
 
 		containerEl.createEl("h3", { text: "Actions" });
