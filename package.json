@@ -1,6 +1,6 @@
 {
   "name": "recall-locus",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Obsidian plugin for RecallLocus semantic search",
   "main": "main.js",
   "scripts": {
