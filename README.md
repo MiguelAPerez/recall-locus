@@ -15,8 +15,17 @@ A running [RecallLocus](https://github.com/MiguelAPerez/recall-locus) instance. 
 
 ## Installation
 
-1. Copy `main.js`, `manifest.json`, and `styles.css` into your vault's `.obsidian/plugins/recall-locus/` directory.
-2. Enable the plugin in **Settings → Community plugins**.
+### Community plugins (recommended)
+
+1. Open **Settings → Community plugins** and disable Safe mode if prompted.
+2. Click **Browse** and search for **RecallLocus**.
+3. Install and enable the plugin.
+
+### Manual
+
+1. Download `main.js`, `manifest.json`, and `styles.css` from the [latest release](https://github.com/MiguelAPerez/obsidian-context-sync/releases/latest).
+2. Copy them into your vault's `.obsidian/plugins/recall-locus/` directory.
+3. Enable the plugin in **Settings → Community plugins**.
 
 ## Configuration
 
