@@ -1,6 +1,6 @@
 # RecallLocus Obsidian Plugin
 
-An Obsidian plugin that syncs your vault to a [RecallLocus](https://github.com/MiguelAPerez/recall-locus) semantic search instance and lets you search your notes with natural language from a sidebar panel.
+An Obsidian plugin that syncs your vault to a [Locus](https://github.com/MiguelAPerez/locus) semantic search instance. Query your notes in natural language or chat with an Ollama LLM to find relevant information across your vault.
 
 ## Features
 
@@ -11,7 +11,7 @@ An Obsidian plugin that syncs your vault to a [RecallLocus](https://github.com/M
 
 ## Requirements
 
-A running [RecallLocus](https://github.com/MiguelAPerez/recall-locus) instance. By default the plugin expects it at `http://localhost:8000`.
+A running [Locus](https://github.com/MiguelAPerez/locus) instance. By default the plugin expects it at `http://localhost:8000`.
 
 ## Installation
 
