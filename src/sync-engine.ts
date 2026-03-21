@@ -141,6 +141,7 @@ export class SyncEngine {
 	private async ingestFile(file: TFile): Promise<void> {
 		const { spaceName, syncData } = this.resolveContext();
 		const text = await this.plugin.app.vault.read(file);
+		if (!text.trim()) return;
 		const resp = await this.client.ingestText(spaceName, text, file.path);
 
 		// If there was an old doc for this path, delete it first
