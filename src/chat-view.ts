@@ -22,17 +22,28 @@ interface StepRecord {
 	resultCount?: number;
 }
 
+export interface ChatSession {
+	id: string;
+	title: string;
+	createdAt: number;
+	updatedAt: number;
+	turns: Turn[];
+}
+
 export class LocusChatView extends ItemView {
 	private plugin: LocusPlugin;
-	private turns: Turn[] = [];
+	private currentSession: ChatSession | null = null;
 	private activeAgent?: Agent;
 
 	// DOM refs
+	private rootEl: HTMLElement;
+	private sessionsScreenEl: HTMLElement;
+	private chatScreenEl: HTMLElement;
 	private messagesEl: HTMLElement;
 	private inputEl: HTMLTextAreaElement;
 	private sendBtn: HTMLButtonElement;
 	private stopBtn: HTMLButtonElement;
-	private spaceLabel: HTMLElement;
+	private chatTitleEl: HTMLElement;
 
 	constructor(leaf: WorkspaceLeaf, plugin: LocusPlugin) {
 		super(leaf);
@@ -47,7 +58,11 @@ export class LocusChatView extends ItemView {
 	async onClose() { this.activeAgent?.cancel(); }
 
 	refreshSettings() {
-		if (this.spaceLabel) this.updateSpaceLabel();
+		this.rootEl?.querySelectorAll<HTMLElement>(".locus-space-label").forEach((el) => {
+			const s = this.plugin.settings.spaceName;
+			el.setText(s || "no space set");
+			el.toggleClass("locus-space-unset", !s);
+		});
 	}
 
 	// ---------------------------------------------------------------------------
@@ -55,21 +70,67 @@ export class LocusChatView extends ItemView {
 	// ---------------------------------------------------------------------------
 
 	private buildUI() {
-		const root = this.containerEl.children[1] as HTMLElement;
-		root.empty();
-		root.addClass("locus-chat-root");
+		this.rootEl = this.containerEl.children[1] as HTMLElement;
+		this.rootEl.empty();
+		this.rootEl.addClass("locus-chat-root");
 
-		// Header
-		const header = root.createDiv("locus-chat-header");
+		this.sessionsScreenEl = this.rootEl.createDiv("locus-sessions-screen");
+		this.chatScreenEl = this.rootEl.createDiv("locus-chat-screen");
+		this.buildChatScreen();
+
+		this.showSessionsList();
+	}
+
+	private buildSessionsScreen() {
+		this.sessionsScreenEl.empty();
+
+		const header = this.sessionsScreenEl.createDiv("locus-chat-header");
 		header.createEl("span", { text: "Locus Chat", cls: "locus-chat-title" });
-		this.spaceLabel = header.createEl("span", { cls: "locus-space-label" });
-		this.updateSpaceLabel();
+		const spaceEl = header.createEl("span", { cls: "locus-space-label" });
+		const s = this.plugin.settings.spaceName;
+		spaceEl.setText(s || "no space set");
+		spaceEl.toggleClass("locus-space-unset", !s);
 
-		// Messages
-		this.messagesEl = root.createDiv("locus-chat-messages");
+		const newBtn = this.sessionsScreenEl.createEl("button", { text: "+ New Chat", cls: "locus-new-chat-btn" });
+		newBtn.addEventListener("click", () => this.newSession());
 
-		// Input row
-		const inputRow = root.createDiv("locus-chat-input-row");
+		const list = this.sessionsScreenEl.createDiv("locus-sessions-list");
+		const sessions = this.plugin.chatSessions ?? [];
+		const sorted = [...sessions].sort((a, b) => b.updatedAt - a.updatedAt);
+
+		if (!sorted.length) {
+			list.createDiv({ text: "No chats yet. Start a new one!", cls: "locus-sessions-empty" });
+		} else {
+			for (const session of sorted) {
+				const item = list.createDiv("locus-session-item");
+				const info = item.createDiv("locus-session-info");
+				info.createDiv({ text: session.title, cls: "locus-session-title" });
+				info.createDiv({ text: new Date(session.updatedAt).toLocaleDateString(), cls: "locus-session-date" });
+				const delBtn = item.createEl("button", { text: "×", cls: "locus-session-delete" });
+				delBtn.addEventListener("click", (e) => {
+					e.stopPropagation();
+					this.deleteSession(session.id);
+				});
+				item.addEventListener("click", () => this.openSession(session));
+			}
+		}
+	}
+
+	private buildChatScreen() {
+		this.chatScreenEl.empty();
+
+		const header = this.chatScreenEl.createDiv("locus-chat-header");
+		const backBtn = header.createEl("button", { text: "←", cls: "locus-back-btn" });
+		backBtn.addEventListener("click", () => this.showSessionsList());
+		this.chatTitleEl = header.createEl("span", { text: "", cls: "locus-chat-session-title" });
+		const spaceEl = header.createEl("span", { cls: "locus-space-label" });
+		const s = this.plugin.settings.spaceName;
+		spaceEl.setText(s || "no space set");
+		spaceEl.toggleClass("locus-space-unset", !s);
+
+		this.messagesEl = this.chatScreenEl.createDiv("locus-chat-messages");
+
+		const inputRow = this.chatScreenEl.createDiv("locus-chat-input-row");
 		this.inputEl = inputRow.createEl("textarea", {
 			placeholder: "Ask anything about your notes…",
 			cls: "locus-chat-input",
@@ -94,10 +155,56 @@ export class LocusChatView extends ItemView {
 		});
 	}
 
-	private updateSpaceLabel() {
-		const s = this.plugin.settings.spaceName;
-		this.spaceLabel.setText(s || "no space set");
-		this.spaceLabel.toggleClass("locus-space-unset", !s);
+	private showSessionsList() {
+		this.activeAgent?.cancel();
+		this.currentSession = null;
+		this.buildSessionsScreen();
+		this.sessionsScreenEl.style.display = "";
+		this.chatScreenEl.style.display = "none";
+	}
+
+	private newSession() {
+		const now = Date.now();
+		const session: ChatSession = {
+			id: `chat-${now}`,
+			title: "New Chat",
+			createdAt: now,
+			updatedAt: now,
+			turns: [],
+		};
+		if (!this.plugin.chatSessions) this.plugin.chatSessions = [];
+		this.plugin.chatSessions.push(session);
+		this.openSession(session);
+	}
+
+	private openSession(session: ChatSession) {
+		this.currentSession = session;
+		this.buildChatScreen();
+		this.chatTitleEl.setText(session.title);
+
+		// Restore existing turns
+		for (const turn of session.turns) {
+			if (turn.role === "user") {
+				const el = this.messagesEl.createDiv("locus-msg-user");
+				el.createDiv({ text: turn.content, cls: "locus-msg-user-bubble" });
+			} else {
+				const wrapper = this.messagesEl.createDiv("locus-msg-assistant");
+				const bubble = new AssistantBubble(wrapper, this.app, this);
+				if (turn.content) bubble.restoreAnswer(turn.content, (path) => this.openFile(path));
+				if (turn.error) bubble.showError(turn.error);
+			}
+		}
+
+		this.sessionsScreenEl.style.display = "none";
+		this.chatScreenEl.style.display = "";
+		this.scrollToBottom();
+		this.inputEl.focus();
+	}
+
+	private deleteSession(id: string) {
+		this.plugin.chatSessions = (this.plugin.chatSessions ?? []).filter((s) => s.id !== id);
+		this.plugin.saveChatSessions();
+		this.buildSessionsScreen();
 	}
 
 	// ---------------------------------------------------------------------------
@@ -111,13 +218,21 @@ export class LocusChatView extends ItemView {
 		const { spaceName, locusUrl, ollamaUrl, chatModel } = this.plugin.settings;
 		if (!spaceName) { this.showError("Set a space name in Locus settings first."); return; }
 		if (!chatModel) { this.showError("Set a chat model in Locus settings first."); return; }
+		if (!this.currentSession) return;
 
 		this.inputEl.value = "";
+
+		// Set title from first user message
+		if (this.currentSession.turns.length === 0) {
+			this.currentSession.title = question.length > 50 ? question.slice(0, 50) + "…" : question;
+			this.chatTitleEl.setText(this.currentSession.title);
+		}
+
 		this.addUserTurn(question);
 		this.setRunning(true);
 
 		const turn: Turn = { role: "assistant", content: "", steps: [] };
-		this.turns.push(turn);
+		this.currentSession.turns.push(turn);
 		const bubble = this.renderAssistantBubble(turn);
 
 		this.activeAgent = new Agent({ locusUrl, ollamaUrl, space: spaceName, model: chatModel });
@@ -128,6 +243,9 @@ export class LocusChatView extends ItemView {
 
 		this.activeAgent = undefined;
 		this.setRunning(false);
+
+		this.currentSession.updatedAt = Date.now();
+		this.plugin.saveChatSessions();
 	}
 
 	// ---------------------------------------------------------------------------
@@ -201,13 +319,13 @@ export class LocusChatView extends ItemView {
 	// ---------------------------------------------------------------------------
 
 	private addUserTurn(text: string) {
-		this.turns.push({ role: "user", content: text });
+		this.currentSession!.turns.push({ role: "user", content: text });
 		const el = this.messagesEl.createDiv("locus-msg-user");
 		el.createDiv({ text, cls: "locus-msg-user-bubble" });
 		this.scrollToBottom();
 	}
 
-	private renderAssistantBubble(turn: Turn): AssistantBubble {
+	private renderAssistantBubble(_turn: Turn): AssistantBubble {
 		const wrapper = this.messagesEl.createDiv("locus-msg-assistant");
 		const bubble = new AssistantBubble(wrapper, this.app, this);
 		this.scrollToBottom();
@@ -246,7 +364,6 @@ export class LocusChatView extends ItemView {
 // ---------------------------------------------------------------------------
 
 class AssistantBubble extends Component {
-	private root: HTMLElement;
 	private stepsEl: HTMLElement;
 	private stepsToggle: HTMLElement;
 	private stepsBody: HTMLElement;
@@ -259,7 +376,6 @@ class AssistantBubble extends Component {
 
 	constructor(root: HTMLElement, app: unknown, view: LocusChatView) {
 		super();
-		this.root = root;
 		this.app = app as ReturnType<typeof Object>;
 		this.view = view;
 
@@ -297,7 +413,7 @@ class AssistantBubble extends Component {
 		el.createSpan({ text: "🔍", cls: "locus-step-icon" });
 		const textEl = el.createSpan({ cls: "locus-step-text" });
 		textEl.createSpan({ text: step.query ?? "", cls: "locus-step-query" });
-		const badge = el.createSpan({ text: "…", cls: "locus-step-badge" });
+		el.createSpan({ text: "…", cls: "locus-step-badge" });
 		this.stepEls.set(step.query ?? "", el);
 		this.updateStepsToggle();
 	}
@@ -357,7 +473,27 @@ class AssistantBubble extends Component {
 			this
 		);
 
-		// Extract any .md paths mentioned in the answer and render as open buttons
+		this.renderSources(raw, onOpen);
+		this.view["scrollToBottom"]();
+	}
+
+	restoreAnswer(content: string, onOpen: (path: string) => void) {
+		this.stepsEl.style.display = "none";
+		MarkdownRenderer.render(
+			(this.app as Parameters<typeof MarkdownRenderer.render>[0]),
+			content,
+			this.answerEl,
+			"",
+			this
+		);
+		this.renderSources(content, onOpen);
+	}
+
+	showError(msg: string) {
+		this.answerEl.createDiv({ text: `⚠ ${msg}`, cls: "locus-answer-error" });
+	}
+
+	private renderSources(raw: string, onOpen: (path: string) => void) {
 		const paths = extractPaths(raw);
 		if (paths.length) {
 			this.sourcesEl.empty();
@@ -371,17 +507,10 @@ class AssistantBubble extends Component {
 				btn.addEventListener("click", () => onOpen(p));
 			}
 		}
-
-		this.view["scrollToBottom"]();
-	}
-
-	showError(msg: string) {
-		this.answerEl.createDiv({ text: `⚠ ${msg}`, cls: "locus-answer-error" });
 	}
 
 	private updateStepsToggle() {
 		const count = this.stepsBody.children.length;
-		// Arrow comes from CSS ::before — don't duplicate it in the text
 		this.stepsToggle.setText(count ? `${count} step${count !== 1 ? "s" : ""}` : "");
 		this.stepsEl.style.display = count ? "" : "none";
 	}
@@ -395,7 +524,6 @@ class AssistantBubble extends Component {
 function extractPaths(text: string): string[] {
 	const seen = new Set<string>();
 	const results: string[] = [];
-	// Match things like: Notes/Foo.md  or  "path/to/file.md"
 	for (const m of text.matchAll(/[\w./ -]+\.md/g)) {
 		const p = m[0].trim();
 		if (!seen.has(p)) { seen.add(p); results.push(p); }

@@ -2,17 +2,19 @@ import { Plugin, Notice, TFile, TAbstractFile } from "obsidian";
 import { LocusSettings, DEFAULT_SETTINGS, LocusSettingTab } from "./settings";
 import { SyncEngine, SyncData } from "./sync-engine";
 import { LocusChatView as SearchView, VIEW_TYPE_LOCUS } from "./chat-panel";
-import { LocusChatView, VIEW_TYPE_LOCUS_CHAT } from "./chat-view";
+import { LocusChatView, VIEW_TYPE_LOCUS_CHAT, ChatSession } from "./chat-view";
 import { LocusChatModal } from "./chat-modal";
 
 interface PluginData {
 	settings: LocusSettings;
 	syncData: SyncData;
+	chatSessions: ChatSession[];
 }
 
 export default class LocusPlugin extends Plugin {
 	settings: LocusSettings;
 	syncData: SyncData;
+	chatSessions: ChatSession[] = [];
 	syncEngine: SyncEngine;
 
 	private statusBarItem: HTMLElement;
@@ -119,10 +121,15 @@ export default class LocusPlugin extends Plugin {
 		const data = (await this.loadData()) as Partial<PluginData> | null;
 		this.settings = Object.assign({}, DEFAULT_SETTINGS, data?.settings ?? {});
 		this.syncData = data?.syncData ?? { files: {} };
+		this.chatSessions = data?.chatSessions ?? [];
+	}
+
+	async saveChatSessions(): Promise<void> {
+		await this.saveData({ settings: this.settings, syncData: this.syncData, chatSessions: this.chatSessions });
 	}
 
 	async saveSettings(): Promise<void> {
-		await this.saveData({ settings: this.settings, syncData: this.syncData });
+		await this.saveData({ settings: this.settings, syncData: this.syncData, chatSessions: this.chatSessions });
 		this.syncEngine?.refreshClient();
 		this.app.workspace.getLeavesOfType(VIEW_TYPE_LOCUS).forEach((leaf) => {
 			(leaf.view as SearchView).refreshClient();
@@ -133,7 +140,7 @@ export default class LocusPlugin extends Plugin {
 	}
 
 	async saveSyncData(): Promise<void> {
-		await this.saveData({ settings: this.settings, syncData: this.syncData });
+		await this.saveData({ settings: this.settings, syncData: this.syncData, chatSessions: this.chatSessions });
 	}
 
 	// ---------------------------------------------------------------------------
