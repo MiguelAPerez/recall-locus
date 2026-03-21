@@ -1,32 +1,32 @@
-# Recall
+# RecallLocus Obsidian Plugin
 
-An Obsidian plugin that syncs your vault to a [Locus](https://github.com/MiguelAPerez/locus) semantic search instance and lets you search your notes with natural language from a sidebar panel.
+An Obsidian plugin that syncs your vault to a [RecallLocus](https://github.com/MiguelAPerez/recall-locus) semantic search instance and lets you search your notes with natural language from a sidebar panel.
 
 ## Features
 
 - **Semantic search** — query your notes in plain language and get ranked results with highlighted excerpts
-- **Auto-sync** — notes are pushed to Locus automatically when created, modified, renamed, or deleted
+- **Auto-sync** — notes are pushed to RecallLocus automatically when created, modified, renamed, or deleted
 - **Startup sync** — optionally re-sync the full vault on every Obsidian launch
 - **Click-to-open** — clicking a result opens the source note directly
 
 ## Requirements
 
-A running [Locus](https://github.com/MiguelAPerez/locus) instance. By default the plugin expects it at `http://localhost:8000`.
+A running [RecallLocus](https://github.com/MiguelAPerez/recall-locus) instance. By default the plugin expects it at `http://localhost:8000`.
 
 ## Installation
 
-1. Copy `main.js`, `manifest.json`, and `styles.css` into your vault's `.obsidian/plugins/locus-obsidian/` directory.
+1. Copy `main.js`, `manifest.json`, and `styles.css` into your vault's `.obsidian/plugins/recall-locus/` directory.
 2. Enable the plugin in **Settings → Community plugins**.
 
 ## Configuration
 
-Open **Settings → Locus** and fill in:
+Open **Settings → RecallLocus** and fill in:
 
 | Setting | Description | Default |
 |---|---|---|
-| Locus URL | Base URL of your Locus instance | `http://localhost:8000` |
-| Space name | Locus space this vault maps to (created automatically) | *(required)* |
-| Auto-sync | Push note changes to Locus in real time | on |
+| RecallLocus URL | Base URL of your RecallLocus instance | `http://localhost:8000` |
+| Space name | RecallLocus space this vault maps to (created automatically) | *(required)* |
+| Auto-sync | Push note changes to RecallLocus in real time | on |
 | Sync on startup | Full vault sync when Obsidian loads | on |
 | Default result count | How many results to show (1–50) | 5 |
 
@@ -36,8 +36,8 @@ Use the **Test** button next to the URL field to verify connectivity. Use **Sync
 
 Open the search panel via:
 - The **search** ribbon icon
-- Command palette: `Locus: Open search panel`
-- Command palette: `Locus: Sync vault now`
+- Command palette: `RecallLocus: Open search panel`
+- Command palette: `RecallLocus: Sync vault now`
 
 Type a query and press `Enter` or click **Search**. Results show the note title, a similarity score, and a highlighted text excerpt. Click any result to open the note.
 
@@ -52,7 +52,7 @@ npm run build     # type-check + production bundle
 The plugin is built with esbuild and targets the Obsidian plugin API. Source files live in `src/`:
 
 - `main.ts` — plugin entry point, vault event wiring, status bar
-- `locus-client.ts` — HTTP client for the Locus REST API
+- `recall-locus-client.ts` — HTTP client for the RecallLocus REST API
 - `sync-engine.ts` — tracks synced files (path → doc ID + mtime) and drives ingest/delete/rename
 - `chat-panel.ts` — sidebar `ItemView` with the search UI
 - `settings.ts` — settings schema, defaults, and settings tab UI

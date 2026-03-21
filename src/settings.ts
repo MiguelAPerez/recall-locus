@@ -1,10 +1,10 @@
 import { App, PluginSettingTab, Setting, Notice } from "obsidian";
-import type LocusPlugin from "./main";
-import { LocusClient } from "./locus-client";
+import type RecallLocusPlugin from "./main";
+import { RecallLocusClient } from "./recall-locus-client";
 import { OllamaClient } from "./ollama-client";
 
-export interface LocusSettings {
-	locusUrl: string;
+export interface RecallLocusSettings {
+	recallLocusUrl: string;
 	spaceName: string;
 	autoSync: boolean;
 	syncOnStartup: boolean;
@@ -13,8 +13,8 @@ export interface LocusSettings {
 	chatModel: string;
 }
 
-export const DEFAULT_SETTINGS: LocusSettings = {
-	locusUrl: "http://localhost:8000",
+export const DEFAULT_SETTINGS: RecallLocusSettings = {
+	recallLocusUrl: "http://localhost:8000",
 	spaceName: "",
 	autoSync: true,
 	syncOnStartup: true,
@@ -23,10 +23,10 @@ export const DEFAULT_SETTINGS: LocusSettings = {
 	chatModel: "",
 };
 
-export class LocusSettingTab extends PluginSettingTab {
-	plugin: LocusPlugin;
+export class RecallLocusSettingTab extends PluginSettingTab {
+	plugin: RecallLocusPlugin;
 
-	constructor(app: App, plugin: LocusPlugin) {
+	constructor(app: App, plugin: RecallLocusPlugin) {
 		super(app, plugin);
 		this.plugin = plugin;
 	}
@@ -35,17 +35,17 @@ export class LocusSettingTab extends PluginSettingTab {
 		const { containerEl } = this;
 		containerEl.empty();
 
-		containerEl.createEl("h2", { text: "Locus" });
+		containerEl.createEl("h2", { text: "RecallLocus" });
 
 		new Setting(containerEl)
-			.setName("Locus URL")
-			.setDesc("Base URL of your running Locus instance.")
+			.setName("RecallLocus URL")
+			.setDesc("Base URL of your running RecallLocus instance.")
 			.addText((text) =>
 				text
 					.setPlaceholder("http://localhost:8000")
-					.setValue(this.plugin.settings.locusUrl)
+					.setValue(this.plugin.settings.recallLocusUrl)
 					.onChange(async (value) => {
-						this.plugin.settings.locusUrl = value.trim();
+						this.plugin.settings.recallLocusUrl = value.trim();
 						await this.plugin.saveSettings();
 					})
 			)
@@ -54,15 +54,15 @@ export class LocusSettingTab extends PluginSettingTab {
 					.setButtonText("Test")
 					.setCta()
 					.onClick(async () => {
-						const client = new LocusClient(this.plugin.settings.locusUrl);
+						const client = new RecallLocusClient(this.plugin.settings.recallLocusUrl);
 						const ok = await client.health();
-						new Notice(ok ? "Connected to Locus!" : "Could not reach Locus.");
+						new Notice(ok ? "Connected to RecallLocus!" : "Could not reach RecallLocus.");
 					})
 			);
 
 		new Setting(containerEl)
 			.setName("Space name")
-			.setDesc("Locus space this vault maps to. Created automatically on first sync.")
+			.setDesc("RecallLocus space this vault maps to. Created automatically on first sync.")
 			.addText((text) =>
 				text
 					.setPlaceholder("my_vault")
@@ -75,7 +75,7 @@ export class LocusSettingTab extends PluginSettingTab {
 
 		new Setting(containerEl)
 			.setName("Auto-sync")
-			.setDesc("Automatically sync notes to Locus when they are created or modified.")
+			.setDesc("Automatically sync notes to RecallLocus when they are created or modified.")
 			.addToggle((toggle) =>
 				toggle.setValue(this.plugin.settings.autoSync).onChange(async (value) => {
 					this.plugin.settings.autoSync = value;
@@ -156,7 +156,7 @@ export class LocusSettingTab extends PluginSettingTab {
 
 		new Setting(containerEl)
 			.setName("Full vault sync")
-			.setDesc("Re-ingest every note in this vault into Locus.")
+			.setDesc("Re-ingest every note in this vault into RecallLocus.")
 			.addButton((btn) =>
 				btn
 					.setButtonText("Sync now")

@@ -1,4 +1,4 @@
-import { LocusClient, SearchResult } from "./locus-client";
+import { RecallLocusClient, SearchResult } from "./recall-locus-client";
 import { OllamaClient, OllamaMessage } from "./ollama-client";
 
 // ---------------------------------------------------------------------------
@@ -69,7 +69,7 @@ Rules:
 // ---------------------------------------------------------------------------
 
 export class Agent {
-	private locus: LocusClient;
+	private locus: RecallLocusClient;
 	private ollama: OllamaClient;
 	private space: string;
 	private model: string;
@@ -83,7 +83,7 @@ export class Agent {
 		model: string;
 		maxSteps?: number;
 	}) {
-		this.locus = new LocusClient(opts.locusUrl);
+		this.locus = new RecallLocusClient(opts.locusUrl);
 		this.ollama = new OllamaClient(opts.ollamaUrl);
 		this.space = opts.space;
 		this.model = opts.model;

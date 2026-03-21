@@ -1,7 +1,7 @@
 {
-  "name": "locus-obsidian",
+  "name": "recall-locus",
   "version": "0.1.0",
-  "description": "Obsidian plugin for Locus semantic search",
+  "description": "Obsidian plugin for RecallLocus semantic search",
   "main": "main.js",
   "scripts": {
     "dev": "node esbuild.config.mjs",

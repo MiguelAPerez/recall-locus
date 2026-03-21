@@ -1,12 +1,12 @@
 import { ItemView, WorkspaceLeaf, TFile, debounce } from "obsidian";
-import type LocusPlugin from "./main";
-import { LocusClient, SearchResult } from "./locus-client";
+import type RecallLocusPlugin from "./main";
+import { RecallLocusClient, SearchResult } from "./recall-locus-client";
 
-export const VIEW_TYPE_LOCUS = "locus-chat";
+export const VIEW_TYPE_RL_SEARCH = "rl-search";
 
-export class LocusChatView extends ItemView {
-	private plugin: LocusPlugin;
-	private client: LocusClient;
+export class RecallLocusChatView extends ItemView {
+	private plugin: RecallLocusPlugin;
+	private client: RecallLocusClient;
 
 	// DOM refs
 	private spaceLabel: HTMLElement;
@@ -15,18 +15,18 @@ export class LocusChatView extends ItemView {
 	private resultsEl: HTMLElement;
 	private statusEl: HTMLElement;
 
-	constructor(leaf: WorkspaceLeaf, plugin: LocusPlugin) {
+	constructor(leaf: WorkspaceLeaf, plugin: RecallLocusPlugin) {
 		super(leaf);
 		this.plugin = plugin;
-		this.client = new LocusClient(plugin.settings.locusUrl);
+		this.client = new RecallLocusClient(plugin.settings.recallLocusUrl);
 	}
 
 	getViewType(): string {
-		return VIEW_TYPE_LOCUS;
+		return VIEW_TYPE_RL_SEARCH;
 	}
 
 	getDisplayText(): string {
-		return "Locus Search";
+		return "RecallLocus Search";
 	}
 
 	getIcon(): string {
@@ -41,7 +41,7 @@ export class LocusChatView extends ItemView {
 
 	/** Refresh client when settings change. */
 	refreshClient(): void {
-		this.client = new LocusClient(this.plugin.settings.locusUrl);
+		this.client = new RecallLocusClient(this.plugin.settings.recallLocusUrl);
 		if (this.spaceLabel) {
 			this.updateSpaceLabel();
 		}
@@ -54,48 +54,48 @@ export class LocusChatView extends ItemView {
 	private buildUI(): void {
 		const root = this.containerEl.children[1] as HTMLElement;
 		root.empty();
-		root.addClass("locus-panel");
+		root.addClass("rl-panel");
 
 		// Header
-		const header = root.createDiv("locus-header");
-		header.createEl("span", { text: "Locus", cls: "locus-title" });
-		this.spaceLabel = header.createEl("span", { cls: "locus-space-label" });
+		const header = root.createDiv("rl-header");
+		header.createEl("span", { text: "RecallLocus", cls: "rl-title" });
+		this.spaceLabel = header.createEl("span", { cls: "rl-space-label" });
 		this.updateSpaceLabel();
 
 		// Search bar
-		const searchBar = root.createDiv("locus-search-bar");
+		const searchBar = root.createDiv("rl-search-bar");
 		this.input = searchBar.createEl("input", {
 			type: "text",
 			placeholder: "Search your notes…",
-			cls: "locus-input",
+			cls: "rl-input",
 		});
 		this.input.addEventListener("keydown", (e) => {
 			if (e.key === "Enter") this.runSearch();
 		});
 
-		const searchBtn = searchBar.createEl("button", { text: "Search", cls: "locus-search-btn" });
+		const searchBtn = searchBar.createEl("button", { text: "Search", cls: "rl-search-btn" });
 		searchBtn.addEventListener("click", () => this.runSearch());
 
 		// Result count selector
-		const controls = root.createDiv("locus-controls");
-		controls.createEl("label", { text: "Results: ", cls: "locus-label" });
-		this.kSelect = controls.createEl("select", { cls: "locus-select" });
+		const controls = root.createDiv("rl-controls");
+		controls.createEl("label", { text: "Results: ", cls: "rl-label" });
+		this.kSelect = controls.createEl("select", { cls: "rl-select" });
 		for (const n of [3, 5, 10, 20]) {
 			const opt = this.kSelect.createEl("option", { text: String(n), value: String(n) });
 			if (n === this.plugin.settings.defaultResults) opt.selected = true;
 		}
 
 		// Status line
-		this.statusEl = root.createDiv("locus-status");
+		this.statusEl = root.createDiv("rl-status");
 
 		// Results container
-		this.resultsEl = root.createDiv("locus-results");
+		this.resultsEl = root.createDiv("rl-results");
 	}
 
 	private updateSpaceLabel(): void {
 		const space = this.plugin.settings.spaceName;
 		this.spaceLabel.setText(space ? `space: ${space}` : "no space configured");
-		this.spaceLabel.toggleClass("locus-space-unset", !space);
+		this.spaceLabel.toggleClass("rl-space-unset", !space);
 	}
 
 	// -------------------------------------------------------------------------
@@ -106,9 +106,9 @@ export class LocusChatView extends ItemView {
 		const query = this.input.value.trim();
 		if (!query) return;
 
-		const { spaceName, locusUrl } = this.plugin.settings;
+		const { spaceName, recallLocusUrl } = this.plugin.settings;
 		if (!spaceName) {
-			this.setStatus("Set a space name in Locus settings first.");
+			this.setStatus("Set a space name in RecallLocus settings first.");
 			return;
 		}
 
@@ -135,27 +135,27 @@ export class LocusChatView extends ItemView {
 		if (!results.length) return;
 
 		for (const result of results) {
-			const card = this.resultsEl.createDiv("locus-result-card");
+			const card = this.resultsEl.createDiv("rl-result-card");
 
 			// Title row
-			const titleRow = card.createDiv("locus-result-title-row");
+			const titleRow = card.createDiv("rl-result-title-row");
 			const title = result.source
 				? result.source.replace(/\.md$/, "").split("/").pop() ?? result.source
 				: result.doc_id;
-			titleRow.createEl("span", { text: title, cls: "locus-result-title" });
+			titleRow.createEl("span", { text: title, cls: "rl-result-title" });
 			titleRow.createEl("span", {
 				text: result.score.toFixed(2),
-				cls: "locus-result-score",
+				cls: "rl-result-score",
 			});
 
 			// Excerpt
 			const excerpt = this.highlight(result.text.slice(0, 200).trim(), query);
-			const excerptEl = card.createDiv("locus-result-excerpt");
+			const excerptEl = card.createDiv("rl-result-excerpt");
 			excerptEl.innerHTML = excerpt + (result.text.length > 200 ? "…" : "");
 
 			// Click to open
 			if (result.source) {
-				card.addClass("locus-result-clickable");
+				card.addClass("rl-result-clickable");
 				card.addEventListener("click", () => this.openNote(result.source!));
 			}
 		}

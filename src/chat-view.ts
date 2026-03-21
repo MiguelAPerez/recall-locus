@@ -1,9 +1,9 @@
 import { ItemView, WorkspaceLeaf, TFile, MarkdownRenderer, Component } from "obsidian"; // TFile used in openFile()
-import type LocusPlugin from "./main";
+import type RecallLocusPlugin from "./main";
 import { Agent, AgentEvent } from "./agent";
-import { SearchResult } from "./locus-client";
+import { SearchResult } from "./recall-locus-client";
 
-export const VIEW_TYPE_LOCUS_CHAT = "locus-chat-view";
+export const VIEW_TYPE_RL_CHAT = "rl-chat";
 
 interface Turn {
 	role: "user" | "assistant";
@@ -30,8 +30,8 @@ export interface ChatSession {
 	turns: Turn[];
 }
 
-export class LocusChatView extends ItemView {
-	private plugin: LocusPlugin;
+export class RecallLocusChatView extends ItemView {
+	private plugin: RecallLocusPlugin;
 	private currentSession: ChatSession | null = null;
 	private activeAgent?: Agent;
 
@@ -45,23 +45,23 @@ export class LocusChatView extends ItemView {
 	private stopBtn: HTMLButtonElement;
 	private chatTitleEl: HTMLElement;
 
-	constructor(leaf: WorkspaceLeaf, plugin: LocusPlugin) {
+	constructor(leaf: WorkspaceLeaf, plugin: RecallLocusPlugin) {
 		super(leaf);
 		this.plugin = plugin;
 	}
 
-	getViewType() { return VIEW_TYPE_LOCUS_CHAT; }
-	getDisplayText() { return "Locus Chat"; }
+	getViewType() { return VIEW_TYPE_RL_CHAT; }
+	getDisplayText() { return "RecallLocus Chat"; }
 	getIcon() { return "message-square"; }
 
 	async onOpen() { this.buildUI(); }
 	async onClose() { this.activeAgent?.cancel(); }
 
 	refreshSettings() {
-		this.rootEl?.querySelectorAll<HTMLElement>(".locus-space-label").forEach((el) => {
+		this.rootEl?.querySelectorAll<HTMLElement>(".rl-space-label").forEach((el) => {
 			const s = this.plugin.settings.spaceName;
 			el.setText(s || "no space set");
-			el.toggleClass("locus-space-unset", !s);
+			el.toggleClass("rl-space-unset", !s);
 		});
 	}
 
@@ -72,10 +72,10 @@ export class LocusChatView extends ItemView {
 	private buildUI() {
 		this.rootEl = this.containerEl.children[1] as HTMLElement;
 		this.rootEl.empty();
-		this.rootEl.addClass("locus-chat-root");
+		this.rootEl.addClass("rl-chat-root");
 
-		this.sessionsScreenEl = this.rootEl.createDiv("locus-sessions-screen");
-		this.chatScreenEl = this.rootEl.createDiv("locus-chat-screen");
+		this.sessionsScreenEl = this.rootEl.createDiv("rl-sessions-screen");
+		this.chatScreenEl = this.rootEl.createDiv("rl-chat-screen");
 		this.buildChatScreen();
 
 		this.showSessionsList();
@@ -84,29 +84,29 @@ export class LocusChatView extends ItemView {
 	private buildSessionsScreen() {
 		this.sessionsScreenEl.empty();
 
-		const header = this.sessionsScreenEl.createDiv("locus-chat-header");
-		header.createEl("span", { text: "Locus Chat", cls: "locus-chat-title" });
-		const spaceEl = header.createEl("span", { cls: "locus-space-label" });
+		const header = this.sessionsScreenEl.createDiv("rl-chat-header");
+		header.createEl("span", { text: "RecallLocus Chat", cls: "rl-chat-title" });
+		const spaceEl = header.createEl("span", { cls: "rl-space-label" });
 		const s = this.plugin.settings.spaceName;
 		spaceEl.setText(s || "no space set");
-		spaceEl.toggleClass("locus-space-unset", !s);
+		spaceEl.toggleClass("rl-space-unset", !s);
 
-		const newBtn = this.sessionsScreenEl.createEl("button", { text: "+ New Chat", cls: "locus-new-chat-btn" });
+		const newBtn = this.sessionsScreenEl.createEl("button", { text: "+ New Chat", cls: "rl-new-chat-btn" });
 		newBtn.addEventListener("click", () => this.newSession());
 
-		const list = this.sessionsScreenEl.createDiv("locus-sessions-list");
+		const list = this.sessionsScreenEl.createDiv("rl-sessions-list");
 		const sessions = this.plugin.chatSessions ?? [];
 		const sorted = [...sessions].sort((a, b) => b.updatedAt - a.updatedAt);
 
 		if (!sorted.length) {
-			list.createDiv({ text: "No chats yet. Start a new one!", cls: "locus-sessions-empty" });
+			list.createDiv({ text: "No chats yet. Start a new one!", cls: "rl-sessions-empty" });
 		} else {
 			for (const session of sorted) {
-				const item = list.createDiv("locus-session-item");
-				const info = item.createDiv("locus-session-info");
-				info.createDiv({ text: session.title, cls: "locus-session-title" });
-				info.createDiv({ text: new Date(session.updatedAt).toLocaleDateString(), cls: "locus-session-date" });
-				const delBtn = item.createEl("button", { text: "×", cls: "locus-session-delete" });
+				const item = list.createDiv("rl-session-item");
+				const info = item.createDiv("rl-session-info");
+				info.createDiv({ text: session.title, cls: "rl-session-title" });
+				info.createDiv({ text: new Date(session.updatedAt).toLocaleDateString(), cls: "rl-session-date" });
+				const delBtn = item.createEl("button", { text: "×", cls: "rl-session-delete" });
 				delBtn.addEventListener("click", (e) => {
 					e.stopPropagation();
 					this.deleteSession(session.id);
@@ -119,21 +119,21 @@ export class LocusChatView extends ItemView {
 	private buildChatScreen() {
 		this.chatScreenEl.empty();
 
-		const header = this.chatScreenEl.createDiv("locus-chat-header");
-		const backBtn = header.createEl("button", { text: "←", cls: "locus-back-btn" });
+		const header = this.chatScreenEl.createDiv("rl-chat-header");
+		const backBtn = header.createEl("button", { text: "←", cls: "rl-back-btn" });
 		backBtn.addEventListener("click", () => this.showSessionsList());
-		this.chatTitleEl = header.createEl("span", { text: "", cls: "locus-chat-session-title" });
-		const spaceEl = header.createEl("span", { cls: "locus-space-label" });
+		this.chatTitleEl = header.createEl("span", { text: "", cls: "rl-chat-session-title" });
+		const spaceEl = header.createEl("span", { cls: "rl-space-label" });
 		const s = this.plugin.settings.spaceName;
 		spaceEl.setText(s || "no space set");
-		spaceEl.toggleClass("locus-space-unset", !s);
+		spaceEl.toggleClass("rl-space-unset", !s);
 
-		this.messagesEl = this.chatScreenEl.createDiv("locus-chat-messages");
+		this.messagesEl = this.chatScreenEl.createDiv("rl-chat-messages");
 
-		const inputRow = this.chatScreenEl.createDiv("locus-chat-input-row");
+		const inputRow = this.chatScreenEl.createDiv("rl-chat-input-row");
 		this.inputEl = inputRow.createEl("textarea", {
 			placeholder: "Ask anything about your notes…",
-			cls: "locus-chat-input",
+			cls: "rl-chat-input",
 		});
 		this.inputEl.rows = 2;
 		this.inputEl.addEventListener("keydown", (e) => {
@@ -143,11 +143,11 @@ export class LocusChatView extends ItemView {
 			}
 		});
 
-		const btnGroup = inputRow.createDiv("locus-chat-btns");
-		this.sendBtn = btnGroup.createEl("button", { text: "Send", cls: "locus-send-btn" });
+		const btnGroup = inputRow.createDiv("rl-chat-btns");
+		this.sendBtn = btnGroup.createEl("button", { text: "Send", cls: "rl-send-btn" });
 		this.sendBtn.addEventListener("click", () => this.submit());
 
-		this.stopBtn = btnGroup.createEl("button", { text: "Stop", cls: "locus-stop-btn" });
+		this.stopBtn = btnGroup.createEl("button", { text: "Stop", cls: "rl-stop-btn" });
 		this.stopBtn.style.display = "none";
 		this.stopBtn.addEventListener("click", () => {
 			this.activeAgent?.cancel();
@@ -185,10 +185,10 @@ export class LocusChatView extends ItemView {
 		// Restore existing turns
 		for (const turn of session.turns) {
 			if (turn.role === "user") {
-				const el = this.messagesEl.createDiv("locus-msg-user");
-				el.createDiv({ text: turn.content, cls: "locus-msg-user-bubble" });
+				const el = this.messagesEl.createDiv("rl-msg-user");
+				el.createDiv({ text: turn.content, cls: "rl-msg-user-bubble" });
 			} else {
-				const wrapper = this.messagesEl.createDiv("locus-msg-assistant");
+				const wrapper = this.messagesEl.createDiv("rl-msg-assistant");
 				const bubble = new AssistantBubble(wrapper, this.app, this);
 				if (turn.content) bubble.restoreAnswer(turn.content, (path) => this.openFile(path));
 				if (turn.error) bubble.showError(turn.error);
@@ -215,9 +215,9 @@ export class LocusChatView extends ItemView {
 		const question = this.inputEl.value.trim();
 		if (!question || this.activeAgent) return;
 
-		const { spaceName, locusUrl, ollamaUrl, chatModel } = this.plugin.settings;
-		if (!spaceName) { this.showError("Set a space name in Locus settings first."); return; }
-		if (!chatModel) { this.showError("Set a chat model in Locus settings first."); return; }
+		const { spaceName, recallLocusUrl, ollamaUrl, chatModel } = this.plugin.settings;
+		if (!spaceName) { this.showError("Set a space name in RecallLocus settings first."); return; }
+		if (!chatModel) { this.showError("Set a chat model in RecallLocus settings first."); return; }
 		if (!this.currentSession) return;
 
 		this.inputEl.value = "";
@@ -235,7 +235,7 @@ export class LocusChatView extends ItemView {
 		this.currentSession.turns.push(turn);
 		const bubble = this.renderAssistantBubble(turn);
 
-		this.activeAgent = new Agent({ locusUrl, ollamaUrl, space: spaceName, model: chatModel });
+		this.activeAgent = new Agent({ locusUrl: recallLocusUrl, ollamaUrl, space: spaceName, model: chatModel });
 
 		await this.activeAgent.run(question, (event: AgentEvent) => {
 			this.handleEvent(event, turn, bubble);
@@ -320,20 +320,20 @@ export class LocusChatView extends ItemView {
 
 	private addUserTurn(text: string) {
 		this.currentSession!.turns.push({ role: "user", content: text });
-		const el = this.messagesEl.createDiv("locus-msg-user");
-		el.createDiv({ text, cls: "locus-msg-user-bubble" });
+		const el = this.messagesEl.createDiv("rl-msg-user");
+		el.createDiv({ text, cls: "rl-msg-user-bubble" });
 		this.scrollToBottom();
 	}
 
 	private renderAssistantBubble(_turn: Turn): AssistantBubble {
-		const wrapper = this.messagesEl.createDiv("locus-msg-assistant");
+		const wrapper = this.messagesEl.createDiv("rl-msg-assistant");
 		const bubble = new AssistantBubble(wrapper, this.app, this);
 		this.scrollToBottom();
 		return bubble;
 	}
 
 	private showError(msg: string) {
-		const el = this.messagesEl.createDiv("locus-msg-error");
+		const el = this.messagesEl.createDiv("rl-msg-error");
 		el.setText(msg);
 		this.scrollToBottom();
 	}
@@ -372,36 +372,36 @@ class AssistantBubble extends Component {
 	private sourcesEl: HTMLElement;
 	private stepEls: Map<string, HTMLElement> = new Map();
 	private app: ReturnType<typeof Object>;
-	private view: LocusChatView;
+	private view: RecallLocusChatView;
 
-	constructor(root: HTMLElement, app: unknown, view: LocusChatView) {
+	constructor(root: HTMLElement, app: unknown, view: RecallLocusChatView) {
 		super();
 		this.app = app as ReturnType<typeof Object>;
 		this.view = view;
 
 		// Thinking indicator
-		this.thinkingEl = root.createDiv("locus-thinking");
-		this.thinkingEl.createSpan({ cls: "locus-thinking-dot" });
-		this.thinkingEl.createSpan({ cls: "locus-thinking-dot" });
-		this.thinkingEl.createSpan({ cls: "locus-thinking-dot" });
+		this.thinkingEl = root.createDiv("rl-thinking");
+		this.thinkingEl.createSpan({ cls: "rl-thinking-dot" });
+		this.thinkingEl.createSpan({ cls: "rl-thinking-dot" });
+		this.thinkingEl.createSpan({ cls: "rl-thinking-dot" });
 		this.thinkingEl.style.display = "none";
 
 		// Step trace (collapsible)
-		this.stepsEl = root.createDiv("locus-steps");
-		this.stepsToggle = this.stepsEl.createDiv("locus-steps-toggle");
-		this.stepsBody = this.stepsEl.createDiv("locus-steps-body");
+		this.stepsEl = root.createDiv("rl-steps");
+		this.stepsToggle = this.stepsEl.createDiv("rl-steps-toggle");
+		this.stepsBody = this.stepsEl.createDiv("rl-steps-body");
 		this.stepsToggle.addEventListener("click", () => {
 			const open = this.stepsBody.style.display !== "none";
 			this.stepsBody.style.display = open ? "none" : "";
-			this.stepsToggle.toggleClass("locus-steps-collapsed", open);
+			this.stepsToggle.toggleClass("rl-steps-collapsed", open);
 		});
 		this.updateStepsToggle();
 
 		// Answer
-		this.answerEl = root.createDiv("locus-answer");
+		this.answerEl = root.createDiv("rl-answer");
 
 		// Sources
-		this.sourcesEl = root.createDiv("locus-sources");
+		this.sourcesEl = root.createDiv("rl-sources");
 	}
 
 	setThinking(on: boolean) {
@@ -409,11 +409,11 @@ class AssistantBubble extends Component {
 	}
 
 	addStep(step: StepRecord) {
-		const el = this.stepsBody.createDiv("locus-step");
-		el.createSpan({ text: "🔍", cls: "locus-step-icon" });
-		const textEl = el.createSpan({ cls: "locus-step-text" });
-		textEl.createSpan({ text: step.query ?? "", cls: "locus-step-query" });
-		el.createSpan({ text: "…", cls: "locus-step-badge" });
+		const el = this.stepsBody.createDiv("rl-step");
+		el.createSpan({ text: "🔍", cls: "rl-step-icon" });
+		const textEl = el.createSpan({ cls: "rl-step-text" });
+		textEl.createSpan({ text: step.query ?? "", cls: "rl-step-query" });
+		el.createSpan({ text: "…", cls: "rl-step-badge" });
 		this.stepEls.set(step.query ?? "", el);
 		this.updateStepsToggle();
 	}
@@ -421,16 +421,16 @@ class AssistantBubble extends Component {
 	updateStepResults(query: string, count: number) {
 		const el = this.stepEls.get(query);
 		if (!el) return;
-		const badge = el.querySelector(".locus-step-badge") as HTMLElement;
+		const badge = el.querySelector(".rl-step-badge") as HTMLElement;
 		if (badge) badge.setText(`${count} found`);
-		el.toggleClass("locus-step-empty", count === 0);
+		el.toggleClass("rl-step-empty", count === 0);
 	}
 
 	addOpenFileStep(step: StepRecord) {
-		const el = this.stepsBody.createDiv("locus-step");
+		const el = this.stepsBody.createDiv("rl-step");
 		el.dataset.docId = step.doc_id ?? "";
-		el.createSpan({ text: "📄", cls: "locus-step-icon" });
-		el.createSpan({ text: "fetching full document…", cls: "locus-step-query locus-step-fetching" });
+		el.createSpan({ text: "📄", cls: "rl-step-icon" });
+		el.createSpan({ text: "fetching full document…", cls: "rl-step-query rl-step-fetching" });
 		this.stepEls.set(`open_file:${step.doc_id}`, el);
 		this.updateStepsToggle();
 	}
@@ -438,20 +438,20 @@ class AssistantBubble extends Component {
 	resolveOpenFileStep(doc_id: string, source?: string) {
 		const el = this.stepEls.get(`open_file:${doc_id}`);
 		if (!el) return;
-		const label = el.querySelector(".locus-step-fetching") as HTMLElement | null;
+		const label = el.querySelector(".rl-step-fetching") as HTMLElement | null;
 		if (label) label.setText(source ?? doc_id);
-		el.createSpan({ text: "✓", cls: "locus-step-badge" });
+		el.createSpan({ text: "✓", cls: "rl-step-badge" });
 	}
 
 	collapseSteps() {
 		this.stepsBody.style.display = "none";
-		this.stepsToggle.addClass("locus-steps-collapsed");
+		this.stepsToggle.addClass("rl-steps-collapsed");
 		this.updateStepsToggle();
 	}
 
 	startAnswer() {
 		this.answerEl.empty();
-		this.answerEl.addClass("locus-answer-streaming");
+		this.answerEl.addClass("rl-answer-streaming");
 	}
 
 	appendToken(token: string) {
@@ -463,7 +463,7 @@ class AssistantBubble extends Component {
 	finishAnswer(onOpen: (path: string) => void) {
 		const raw = this.answerEl.getText();
 		this.answerEl.empty();
-		this.answerEl.removeClass("locus-answer-streaming");
+		this.answerEl.removeClass("rl-answer-streaming");
 
 		MarkdownRenderer.render(
 			(this.app as Parameters<typeof MarkdownRenderer.render>[0]),
@@ -490,18 +490,18 @@ class AssistantBubble extends Component {
 	}
 
 	showError(msg: string) {
-		this.answerEl.createDiv({ text: `⚠ ${msg}`, cls: "locus-answer-error" });
+		this.answerEl.createDiv({ text: `⚠ ${msg}`, cls: "rl-answer-error" });
 	}
 
 	private renderSources(raw: string, onOpen: (path: string) => void) {
 		const paths = extractPaths(raw);
 		if (paths.length) {
 			this.sourcesEl.empty();
-			this.sourcesEl.createDiv({ text: "Open", cls: "locus-sources-label" });
+			this.sourcesEl.createDiv({ text: "Open", cls: "rl-sources-label" });
 			for (const p of paths) {
 				const btn = this.sourcesEl.createEl("button", {
 					text: p.split("/").pop()?.replace(/\.md$/, "") ?? p,
-					cls: "locus-source-btn",
+					cls: "rl-source-btn",
 				});
 				btn.title = p;
 				btn.addEventListener("click", () => onOpen(p));

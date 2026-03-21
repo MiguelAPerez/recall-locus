@@ -1,6 +1,6 @@
 import { Notice, TFile, TAbstractFile, Vault } from "obsidian";
-import type LocusPlugin from "./main";
-import { LocusClient } from "./locus-client";
+import type RecallLocusPlugin from "./main";
+import { RecallLocusClient } from "./recall-locus-client";
 
 interface FileRecord {
 	docId: string;
@@ -12,18 +12,18 @@ export interface SyncData {
 }
 
 export class SyncEngine {
-	private plugin: LocusPlugin;
-	private client: LocusClient;
+	private plugin: RecallLocusPlugin;
+	private client: RecallLocusClient;
 	private isSyncing = false;
 
-	constructor(plugin: LocusPlugin) {
+	constructor(plugin: RecallLocusPlugin) {
 		this.plugin = plugin;
-		this.client = new LocusClient(plugin.settings.locusUrl);
+		this.client = new RecallLocusClient(plugin.settings.recallLocusUrl);
 	}
 
 	/** Call when settings change so the client picks up the new URL. */
 	refreshClient(): void {
-		this.client = new LocusClient(this.plugin.settings.locusUrl);
+		this.client = new RecallLocusClient(this.plugin.settings.recallLocusUrl);
 	}
 
 	// -------------------------------------------------------------------------
@@ -45,7 +45,7 @@ export class SyncEngine {
 		if (this.isSyncing) return;
 		const { spaceName } = this.plugin.settings;
 		if (!spaceName) {
-			new Notice("Locus: set a space name in settings before syncing.");
+			new Notice("RecallLocus: set a space name in settings before syncing.");
 			return;
 		}
 
@@ -77,10 +77,10 @@ export class SyncEngine {
 			}
 
 			await this.plugin.saveSyncData();
-			new Notice(`Locus: synced ${count} note${count !== 1 ? "s" : ""}.`);
+			new Notice(`RecallLocus: synced ${count} note${count !== 1 ? "s" : ""}.`);
 		} catch (err) {
-			console.error("[Locus] Sync error:", err);
-			new Notice(`Locus sync failed: ${(err as Error).message}`);
+			console.error("[RecallLocus] Sync error:", err);
+			new Notice(`RecallLocus sync failed: ${(err as Error).message}`);
 		} finally {
 			this.isSyncing = false;
 			this.plugin.setStatus("idle");
@@ -97,7 +97,7 @@ export class SyncEngine {
 			await this.ingestFile(file);
 			await this.plugin.saveSyncData();
 		} catch (err) {
-			console.error("[Locus] File sync error:", err);
+			console.error("[RecallLocus] File sync error:", err);
 		}
 	}
 
@@ -110,7 +110,7 @@ export class SyncEngine {
 			await this.removeRecord(path);
 			await this.plugin.saveSyncData();
 		} catch (err) {
-			console.error("[Locus] Delete error:", err);
+			console.error("[RecallLocus] Delete error:", err);
 		}
 	}
 
@@ -125,7 +125,7 @@ export class SyncEngine {
 			await this.ingestFile(file);
 			await this.plugin.saveSyncData();
 		} catch (err) {
-			console.error("[Locus] Rename error:", err);
+			console.error("[RecallLocus] Rename error:", err);
 		}
 	}
 

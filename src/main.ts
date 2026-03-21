@@ -1,18 +1,18 @@
 import { Plugin, Notice, TFile, TAbstractFile } from "obsidian";
-import { LocusSettings, DEFAULT_SETTINGS, LocusSettingTab } from "./settings";
+import { RecallLocusSettings, DEFAULT_SETTINGS, RecallLocusSettingTab } from "./settings";
 import { SyncEngine, SyncData } from "./sync-engine";
-import { LocusChatView as SearchView, VIEW_TYPE_LOCUS } from "./chat-panel";
-import { LocusChatView, VIEW_TYPE_LOCUS_CHAT, ChatSession } from "./chat-view";
-import { LocusChatModal } from "./chat-modal";
+import { RecallLocusChatView as SearchView, VIEW_TYPE_RL_SEARCH } from "./chat-panel";
+import { RecallLocusChatView, VIEW_TYPE_RL_CHAT, ChatSession } from "./chat-view";
+import { RecallLocusChatModal } from "./chat-modal";
 
 interface PluginData {
-	settings: LocusSettings;
+	settings: RecallLocusSettings;
 	syncData: SyncData;
 	chatSessions: ChatSession[];
 }
 
-export default class LocusPlugin extends Plugin {
-	settings: LocusSettings;
+export default class RecallLocusPlugin extends Plugin {
+	settings: RecallLocusSettings;
 	syncData: SyncData;
 	chatSessions: ChatSession[] = [];
 	syncEngine: SyncEngine;
@@ -25,38 +25,38 @@ export default class LocusPlugin extends Plugin {
 		this.syncEngine = new SyncEngine(this);
 
 		// Register views
-		this.registerView(VIEW_TYPE_LOCUS, (leaf) => new SearchView(leaf, this));
-		this.registerView(VIEW_TYPE_LOCUS_CHAT, (leaf) => new LocusChatView(leaf, this));
+		this.registerView(VIEW_TYPE_RL_SEARCH, (leaf) => new SearchView(leaf, this));
+		this.registerView(VIEW_TYPE_RL_CHAT, (leaf) => new RecallLocusChatView(leaf, this));
 
 		// Settings tab
-		this.addSettingTab(new LocusSettingTab(this.app, this));
+		this.addSettingTab(new RecallLocusSettingTab(this.app, this));
 
 		// Status bar
 		this.statusBarItem = this.addStatusBarItem();
 		this.setStatus("idle");
 
 		// Ribbon icons
-		this.addRibbonIcon("search", "Locus Search", () => this.activateView(VIEW_TYPE_LOCUS));
-		this.addRibbonIcon("message-square", "Locus Chat", () => this.activateView(VIEW_TYPE_LOCUS_CHAT));
+		this.addRibbonIcon("search", "RecallLocus Search", () => this.activateView(VIEW_TYPE_RL_SEARCH));
+		this.addRibbonIcon("message-square", "RecallLocus Chat", () => this.activateView(VIEW_TYPE_RL_CHAT));
 
 		// Commands
 		this.addCommand({
 			id: "open-search",
 			name: "Open search panel",
-			callback: () => this.activateView(VIEW_TYPE_LOCUS),
+			callback: () => this.activateView(VIEW_TYPE_RL_SEARCH),
 		});
 
 		this.addCommand({
 			id: "open-chat",
 			name: "Open chat panel",
-			callback: () => this.activateView(VIEW_TYPE_LOCUS_CHAT),
+			callback: () => this.activateView(VIEW_TYPE_RL_CHAT),
 		});
 
 		this.addCommand({
 			id: "ask",
 			name: "Ask (quick modal)",
 			hotkeys: [{ modifiers: ["Mod", "Shift"], key: "l" }],
-			callback: () => new LocusChatModal(this.app, this).open(),
+			callback: () => new RecallLocusChatModal(this.app, this).open(),
 		});
 
 		this.addCommand({
@@ -109,8 +109,8 @@ export default class LocusPlugin extends Plugin {
 	}
 
 	async onunload(): Promise<void> {
-		this.app.workspace.detachLeavesOfType(VIEW_TYPE_LOCUS);
-		this.app.workspace.detachLeavesOfType(VIEW_TYPE_LOCUS_CHAT);
+		this.app.workspace.detachLeavesOfType(VIEW_TYPE_RL_SEARCH);
+		this.app.workspace.detachLeavesOfType(VIEW_TYPE_RL_CHAT);
 	}
 
 	// ---------------------------------------------------------------------------
@@ -131,11 +131,11 @@ export default class LocusPlugin extends Plugin {
 	async saveSettings(): Promise<void> {
 		await this.saveData({ settings: this.settings, syncData: this.syncData, chatSessions: this.chatSessions });
 		this.syncEngine?.refreshClient();
-		this.app.workspace.getLeavesOfType(VIEW_TYPE_LOCUS).forEach((leaf) => {
+		this.app.workspace.getLeavesOfType(VIEW_TYPE_RL_SEARCH).forEach((leaf) => {
 			(leaf.view as SearchView).refreshClient();
 		});
-		this.app.workspace.getLeavesOfType(VIEW_TYPE_LOCUS_CHAT).forEach((leaf) => {
-			(leaf.view as LocusChatView).refreshSettings();
+		this.app.workspace.getLeavesOfType(VIEW_TYPE_RL_CHAT).forEach((leaf) => {
+			(leaf.view as RecallLocusChatView).refreshSettings();
 		});
 	}
 
@@ -149,11 +149,11 @@ export default class LocusPlugin extends Plugin {
 
 	setStatus(state: "idle" | "syncing" | "error"): void {
 		const icons: Record<string, string> = {
-			idle: "Locus ●",
-			syncing: "Locus ↻",
-			error: "Locus ✕",
+			idle: "RL ●",
+			syncing: "RL ↻",
+			error: "RL ✕",
 		};
-		this.statusBarItem.setText(icons[state] ?? "Locus");
+		this.statusBarItem.setText(icons[state] ?? "RecallLocus");
 	}
 
 	private async activateView(type: string): Promise<void> {

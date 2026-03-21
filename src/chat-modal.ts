@@ -1,10 +1,10 @@
 import { App, Modal, TFile, MarkdownRenderer, Component } from "obsidian";
-import type LocusPlugin from "./main";
+import type RecallLocusPlugin from "./main";
 import { Agent, AgentEvent } from "./agent";
-import { VIEW_TYPE_LOCUS_CHAT, LocusChatView } from "./chat-view";
+import { VIEW_TYPE_RL_CHAT, RecallLocusChatView } from "./chat-view";
 
-export class LocusChatModal extends Modal {
-	private plugin: LocusPlugin;
+export class RecallLocusChatModal extends Modal {
+	private plugin: RecallLocusPlugin;
 	private agent?: Agent;
 
 	// DOM refs
@@ -21,13 +21,13 @@ export class LocusChatModal extends Modal {
 	private lastQuestion = "";
 	private lastAnswer = "";
 
-	constructor(app: App, plugin: LocusPlugin) {
+	constructor(app: App, plugin: RecallLocusPlugin) {
 		super(app);
 		this.plugin = plugin;
 	}
 
 	onOpen() {
-		this.modalEl.addClass("locus-modal");
+		this.modalEl.addClass("rl-modal");
 		this.buildUI();
 		setTimeout(() => this.inputEl.focus(), 50);
 	}
@@ -43,21 +43,21 @@ export class LocusChatModal extends Modal {
 	private buildUI() {
 		const { contentEl } = this;
 		contentEl.empty();
-		contentEl.addClass("locus-modal-content");
+		contentEl.addClass("rl-modal-content");
 
 		// Title row
-		const titleRow = contentEl.createDiv("locus-modal-title-row");
-		titleRow.createEl("span", { text: "Ask Locus", cls: "locus-modal-title" });
+		const titleRow = contentEl.createDiv("rl-modal-title-row");
+		titleRow.createEl("span", { text: "Ask RecallLocus", cls: "rl-modal-title" });
 		const spaceName = this.plugin.settings.spaceName;
 		titleRow.createEl("span", {
 			text: spaceName || "no space set",
-			cls: `locus-space-label${spaceName ? "" : " locus-space-unset"}`,
+			cls: `rl-space-label${spaceName ? "" : " rl-space-unset"}`,
 		});
 
 		// Input
 		this.inputEl = contentEl.createEl("textarea", {
 			placeholder: "What would you like to know about your notes?",
-			cls: "locus-modal-input",
+			cls: "rl-modal-input",
 		});
 		this.inputEl.rows = 3;
 		this.inputEl.addEventListener("keydown", (e) => {
@@ -69,11 +69,11 @@ export class LocusChatModal extends Modal {
 		});
 
 		// Buttons
-		const btnRow = contentEl.createDiv("locus-modal-btn-row");
-		this.submitBtn = btnRow.createEl("button", { text: "Ask", cls: "locus-send-btn" });
+		const btnRow = contentEl.createDiv("rl-modal-btn-row");
+		this.submitBtn = btnRow.createEl("button", { text: "Ask", cls: "rl-send-btn" });
 		this.submitBtn.addEventListener("click", () => this.submit());
 
-		this.stopBtn = btnRow.createEl("button", { text: "Stop", cls: "locus-stop-btn" });
+		this.stopBtn = btnRow.createEl("button", { text: "Stop", cls: "rl-stop-btn" });
 		this.stopBtn.style.display = "none";
 		this.stopBtn.addEventListener("click", () => {
 			this.agent?.cancel();
@@ -82,22 +82,22 @@ export class LocusChatModal extends Modal {
 
 		this.openPanelBtn = btnRow.createEl("button", {
 			text: "Open in chat panel",
-			cls: "locus-open-panel-btn",
+			cls: "rl-open-panel-btn",
 		});
 		this.openPanelBtn.style.display = "none";
 		this.openPanelBtn.addEventListener("click", () => this.openInPanel());
 
 		// Status
-		this.statusEl = contentEl.createDiv("locus-modal-status");
+		this.statusEl = contentEl.createDiv("rl-modal-status");
 
 		// Steps trace
-		this.stepsEl = contentEl.createDiv("locus-modal-steps");
+		this.stepsEl = contentEl.createDiv("rl-modal-steps");
 
 		// Answer
-		this.answerEl = contentEl.createDiv("locus-modal-answer");
+		this.answerEl = contentEl.createDiv("rl-modal-answer");
 
 		// Sources
-		this.sourcesEl = contentEl.createDiv("locus-modal-sources");
+		this.sourcesEl = contentEl.createDiv("rl-modal-sources");
 	}
 
 	// ---------------------------------------------------------------------------
@@ -108,9 +108,9 @@ export class LocusChatModal extends Modal {
 		const question = this.inputEl.value.trim();
 		if (!question) return;
 
-		const { spaceName, locusUrl, ollamaUrl, chatModel } = this.plugin.settings;
-		if (!spaceName) { this.setStatus("Set a space name in Locus settings first."); return; }
-		if (!chatModel) { this.setStatus("Set a chat model in Locus settings first."); return; }
+		const { spaceName, recallLocusUrl, ollamaUrl, chatModel } = this.plugin.settings;
+		if (!spaceName) { this.setStatus("Set a space name in RecallLocus settings first."); return; }
+		if (!chatModel) { this.setStatus("Set a chat model in RecallLocus settings first."); return; }
 
 		this.lastQuestion = question;
 		this.lastAnswer = "";
@@ -122,7 +122,7 @@ export class LocusChatModal extends Modal {
 		this.setRunning(true);
 		this.setStatus("Planning…");
 
-		this.agent = new Agent({ locusUrl, ollamaUrl, space: spaceName, model: chatModel });
+		this.agent = new Agent({ locusUrl: recallLocusUrl, ollamaUrl, space: spaceName, model: chatModel });
 
 		await this.agent.run(question, (event: AgentEvent) => this.handleEvent(event));
 
@@ -142,22 +142,22 @@ export class LocusChatModal extends Modal {
 
 			case "search":
 				this.setStatus(`Searching: "${event.query}"`);
-				this.addStepRow(`🔍 ${event.query}`, "locus-modal-step");
+				this.addStepRow(`🔍 ${event.query}`, "rl-modal-step");
 				break;
 
 			case "search_results": {
-				const rows = this.stepsEl.querySelectorAll(".locus-modal-step");
+				const rows = this.stepsEl.querySelectorAll(".rl-modal-step");
 				const last = rows[rows.length - 1] as HTMLElement | undefined;
 				if (last) {
-					const badge = last.createSpan({ cls: "locus-step-badge" });
+					const badge = last.createSpan({ cls: "rl-step-badge" });
 					badge.setText(`${event.results.length} found`);
-					if (!event.results.length) last.addClass("locus-step-empty");
+					if (!event.results.length) last.addClass("rl-step-empty");
 				}
 				break;
 			}
 
 			case "open_file": {
-				const row = this.stepsEl.createDiv("locus-modal-step");
+				const row = this.stepsEl.createDiv("rl-modal-step");
 				row.dataset.docId = event.doc_id;
 				row.createSpan({ text: "📄 fetching full document…" });
 				break;
@@ -172,7 +172,7 @@ export class LocusChatModal extends Modal {
 			case "answer_start":
 				this.setStatus("Writing answer…");
 				this.answerEl.empty();
-				this.answerEl.addClass("locus-answer-streaming");
+				this.answerEl.addClass("rl-answer-streaming");
 				break;
 
 			case "answer_token":
@@ -184,7 +184,7 @@ export class LocusChatModal extends Modal {
 				const raw = this.answerEl.getText();
 				this.lastAnswer = raw;
 				this.answerEl.empty();
-				this.answerEl.removeClass("locus-answer-streaming");
+				this.answerEl.removeClass("rl-answer-streaming");
 
 				const comp = new Component();
 				MarkdownRenderer.render(this.app, raw, this.answerEl, "", comp);
@@ -194,7 +194,7 @@ export class LocusChatModal extends Modal {
 					const p = m[0].trim();
 					const btn = this.sourcesEl.createEl("button", {
 						text: p.split("/").pop()?.replace(/\.md$/, "") ?? p,
-						cls: "locus-source-btn",
+						cls: "rl-source-btn",
 					});
 					btn.title = p;
 					btn.addEventListener("click", () => this.openFile(p));
@@ -241,11 +241,11 @@ export class LocusChatModal extends Modal {
 	private async openInPanel() {
 		this.close();
 		// Activate chat panel
-		const existing = this.app.workspace.getLeavesOfType(VIEW_TYPE_LOCUS_CHAT);
+		const existing = this.app.workspace.getLeavesOfType(VIEW_TYPE_RL_CHAT);
 		let leaf = existing[0];
 		if (!leaf) {
 			leaf = this.app.workspace.getRightLeaf(false)!;
-			await leaf.setViewState({ type: VIEW_TYPE_LOCUS_CHAT, active: true });
+			await leaf.setViewState({ type: VIEW_TYPE_RL_CHAT, active: true });
 		}
 		this.app.workspace.revealLeaf(leaf);
 	}

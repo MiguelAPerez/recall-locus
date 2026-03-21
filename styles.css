@@ -1,6 +1,6 @@
-/* Locus Plugin Styles */
+/* RecallLocus Plugin Styles */
 
-.locus-panel {
+.rl-panel {
 	display: flex;
 	flex-direction: column;
 	height: 100%;
@@ -10,7 +10,7 @@
 }
 
 /* Header */
-.locus-header {
+.rl-header {
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
@@ -18,13 +18,13 @@
 	border-bottom: 1px solid var(--background-modifier-border);
 }
 
-.locus-title {
+.rl-title {
 	font-weight: 700;
 	font-size: 1.1em;
 	color: var(--text-accent);
 }
 
-.locus-space-label {
+.rl-space-label {
 	font-size: 0.78em;
 	color: var(--text-muted);
 	font-family: var(--font-monospace);
@@ -33,17 +33,17 @@
 	border-radius: 4px;
 }
 
-.locus-space-unset {
+.rl-space-unset {
 	color: var(--text-error);
 }
 
 /* Search bar */
-.locus-search-bar {
+.rl-search-bar {
 	display: flex;
 	gap: 6px;
 }
 
-.locus-input {
+.rl-input {
 	flex: 1;
 	padding: 6px 10px;
 	border-radius: 6px;
@@ -53,13 +53,13 @@
 	font-size: 0.9em;
 }
 
-.locus-input:focus {
+.rl-input:focus {
 	outline: none;
 	border-color: var(--text-accent);
 	box-shadow: 0 0 0 2px var(--text-accent-hover);
 }
 
-.locus-search-btn {
+.rl-search-btn {
 	padding: 6px 14px;
 	border-radius: 6px;
 	background: var(--interactive-accent);
@@ -70,23 +70,23 @@
 	white-space: nowrap;
 }
 
-.locus-search-btn:hover {
+.rl-search-btn:hover {
 	background: var(--interactive-accent-hover);
 }
 
 /* Controls row */
-.locus-controls {
+.rl-controls {
 	display: flex;
 	align-items: center;
 	gap: 6px;
 }
 
-.locus-label {
+.rl-label {
 	font-size: 0.82em;
 	color: var(--text-muted);
 }
 
-.locus-select {
+.rl-select {
 	padding: 2px 4px;
 	border-radius: 4px;
 	border: 1px solid var(--background-modifier-border);
@@ -96,14 +96,14 @@
 }
 
 /* Status */
-.locus-status {
+.rl-status {
 	font-size: 0.78em;
 	color: var(--text-muted);
 	min-height: 16px;
 }
 
 /* Results */
-.locus-results {
+.rl-results {
 	flex: 1;
 	overflow-y: auto;
 	display: flex;
@@ -111,7 +111,7 @@
 	gap: 8px;
 }
 
-.locus-result-card {
+.rl-result-card {
 	padding: 10px 12px;
 	border-radius: 8px;
 	border: 1px solid var(--background-modifier-border);
@@ -119,23 +119,23 @@
 	transition: border-color 0.15s, background 0.15s;
 }
 
-.locus-result-clickable {
+.rl-result-clickable {
 	cursor: pointer;
 }
 
-.locus-result-clickable:hover {
+.rl-result-clickable:hover {
 	border-color: var(--text-accent);
 	background: var(--background-secondary-alt);
 }
 
-.locus-result-title-row {
+.rl-result-title-row {
 	display: flex;
 	justify-content: space-between;
 	align-items: baseline;
 	margin-bottom: 5px;
 }
 
-.locus-result-title {
+.rl-result-title {
 	font-weight: 600;
 	font-size: 0.92em;
 	color: var(--text-normal);
@@ -145,7 +145,7 @@
 	max-width: 80%;
 }
 
-.locus-result-score {
+.rl-result-score {
 	font-size: 0.75em;
 	font-family: var(--font-monospace);
 	color: var(--text-accent);
@@ -155,14 +155,14 @@
 	flex-shrink: 0;
 }
 
-.locus-result-excerpt {
+.rl-result-excerpt {
 	font-size: 0.82em;
 	color: var(--text-muted);
 	line-height: 1.45;
 	word-break: break-word;
 }
 
-.locus-result-excerpt mark {
+.rl-result-excerpt mark {
 	background: var(--text-highlight-bg);
 	color: var(--text-normal);
 	border-radius: 2px;
@@ -173,14 +173,14 @@
    Chat panel (sidebar)
    ============================================================ */
 
-.locus-chat-root {
+.rl-chat-root {
 	display: flex;
 	flex-direction: column;
 	height: 100%;
 	box-sizing: border-box;
 }
 
-.locus-chat-header {
+.rl-chat-header {
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
@@ -189,13 +189,13 @@
 	flex-shrink: 0;
 }
 
-.locus-chat-title {
+.rl-chat-title {
 	font-weight: 700;
 	font-size: 1em;
 	color: var(--text-accent);
 }
 
-.locus-chat-messages {
+.rl-chat-messages {
 	flex: 1;
 	overflow-y: auto;
 	padding: 10px;
@@ -205,12 +205,12 @@
 }
 
 /* User message */
-.locus-msg-user {
+.rl-msg-user {
 	display: flex;
 	justify-content: flex-end;
 }
 
-.locus-msg-user-bubble {
+.rl-msg-user-bubble {
 	background: var(--interactive-accent);
 	color: var(--text-on-accent);
 	padding: 8px 12px;
@@ -223,14 +223,14 @@
 }
 
 /* Assistant message */
-.locus-msg-assistant {
+.rl-msg-assistant {
 	display: flex;
 	flex-direction: column;
 	gap: 6px;
 	max-width: 100%;
 }
 
-.locus-msg-error {
+.rl-msg-error {
 	font-size: 0.82em;
 	color: var(--text-error);
 	padding: 4px 8px;
@@ -238,46 +238,46 @@
 }
 
 /* Thinking dots */
-.locus-thinking {
+.rl-thinking {
 	display: flex;
 	gap: 4px;
 	padding: 4px 2px;
 }
 
-.locus-thinking-dot {
+.rl-thinking-dot {
 	width: 6px;
 	height: 6px;
 	border-radius: 50%;
 	background: var(--text-muted);
-	animation: locus-bounce 1.2s infinite ease-in-out;
+	animation: rl-bounce 1.2s infinite ease-in-out;
 }
 
-.locus-thinking-dot:nth-child(2) { animation-delay: 0.2s; }
-.locus-thinking-dot:nth-child(3) { animation-delay: 0.4s; }
+.rl-thinking-dot:nth-child(2) { animation-delay: 0.2s; }
+.rl-thinking-dot:nth-child(3) { animation-delay: 0.4s; }
 
-@keyframes locus-bounce {
+@keyframes rl-bounce {
 	0%, 80%, 100% { transform: translateY(0); opacity: 0.4; }
 	40%           { transform: translateY(-5px); opacity: 1; }
 }
 
 /* Step trace */
-.locus-steps {
+.rl-steps {
 	font-size: 0.8em;
 }
 
-.locus-steps-toggle {
+.rl-steps-toggle {
 	cursor: pointer;
 	color: var(--text-muted);
 	user-select: none;
 	padding: 2px 0;
 }
 
-.locus-steps-toggle:hover { color: var(--text-normal); }
+.rl-steps-toggle:hover { color: var(--text-normal); }
 
-.locus-steps-collapsed::before { content: "▶ "; }
-.locus-steps-toggle:not(.locus-steps-collapsed)::before { content: "▼ "; }
+.rl-steps-collapsed::before { content: "▶ "; }
+.rl-steps-toggle:not(.rl-steps-collapsed)::before { content: "▼ "; }
 
-.locus-steps-body {
+.rl-steps-body {
 	display: flex;
 	flex-direction: column;
 	gap: 4px;
@@ -286,21 +286,21 @@
 	margin-left: 4px;
 }
 
-.locus-step {
+.rl-step {
 	display: flex;
 	align-items: center;
 	gap: 6px;
 	color: var(--text-muted);
 }
 
-.locus-step-icon { flex-shrink: 0; }
+.rl-step-icon { flex-shrink: 0; }
 
-.locus-step-query {
+.rl-step-query {
 	font-family: var(--font-monospace);
 	font-size: 0.95em;
 }
 
-.locus-step-badge {
+.rl-step-badge {
 	margin-left: auto;
 	font-size: 0.85em;
 	background: var(--background-secondary);
@@ -310,12 +310,12 @@
 	flex-shrink: 0;
 }
 
-.locus-step-empty .locus-step-badge {
+.rl-step-empty .rl-step-badge {
 	color: var(--text-muted);
 }
 
 /* open_file step */
-.locus-step-openfile {
+.rl-step-openfile {
 	flex-direction: column;
 	align-items: flex-start;
 	gap: 4px;
@@ -324,17 +324,17 @@
 	border-radius: 6px;
 }
 
-.locus-step-openfile-info { font-size: 0.9em; }
-.locus-step-openfile-name { font-weight: 600; color: var(--text-normal); }
-.locus-step-openfile-reason { color: var(--text-muted); font-size: 0.9em; }
+.rl-step-openfile-info { font-size: 0.9em; }
+.rl-step-openfile-name { font-weight: 600; color: var(--text-normal); }
+.rl-step-openfile-reason { color: var(--text-muted); font-size: 0.9em; }
 
-.locus-step-openfile-btns {
+.rl-step-openfile-btns {
 	display: flex;
 	gap: 6px;
 	margin-top: 2px;
 }
 
-.locus-allow-btn, .locus-skip-btn {
+.rl-allow-btn, .rl-skip-btn {
 	padding: 3px 10px;
 	border-radius: 4px;
 	border: none;
@@ -342,58 +342,58 @@
 	font-size: 0.82em;
 }
 
-.locus-allow-btn {
+.rl-allow-btn {
 	background: var(--interactive-accent);
 	color: var(--text-on-accent);
 }
 
-.locus-allow-btn:hover { background: var(--interactive-accent-hover); }
-.locus-allow-btn:disabled, .locus-skip-btn:disabled { opacity: 0.5; cursor: default; }
+.rl-allow-btn:hover { background: var(--interactive-accent-hover); }
+.rl-allow-btn:disabled, .rl-skip-btn:disabled { opacity: 0.5; cursor: default; }
 
-.locus-skip-btn {
+.rl-skip-btn {
 	background: var(--background-modifier-border);
 	color: var(--text-muted);
 }
 
-.locus-step-allowed { opacity: 0.7; }
-.locus-step-skipped { opacity: 0.4; }
+.rl-step-allowed { opacity: 0.7; }
+.rl-step-skipped { opacity: 0.4; }
 
 /* Answer */
-.locus-answer {
+.rl-answer {
 	font-size: 0.9em;
 	line-height: 1.6;
 	color: var(--text-normal);
 }
 
-.locus-answer-streaming {
+.rl-answer-streaming {
 	white-space: pre-wrap;
 	word-break: break-word;
 }
 
-.locus-answer-streaming::after {
+.rl-answer-streaming::after {
 	content: "▌";
-	animation: locus-blink 0.8s step-end infinite;
+	animation: rl-blink 0.8s step-end infinite;
 	color: var(--text-accent);
 }
 
-@keyframes locus-blink {
+@keyframes rl-blink {
 	50% { opacity: 0; }
 }
 
-.locus-answer-error {
+.rl-answer-error {
 	color: var(--text-error);
 	font-size: 0.85em;
 }
 
 /* Sources */
-.locus-sources {
+.rl-sources {
 	display: flex;
 	flex-wrap: wrap;
 	gap: 4px;
 	align-items: center;
 }
 
-.locus-sources-label {
+.rl-sources-label {
 	font-size: 0.75em;
 	color: var(--text-muted);
 	text-transform: uppercase;
@@ -401,7 +401,7 @@
 	width: 100%;
 }
 
-.locus-source-btn {
+.rl-source-btn {
 	padding: 3px 8px;
 	border-radius: 4px;
 	border: 1px solid var(--background-modifier-border);
@@ -411,13 +411,13 @@
 	cursor: pointer;
 }
 
-.locus-source-btn:hover {
+.rl-source-btn:hover {
 	background: var(--background-secondary-alt);
 	border-color: var(--text-accent);
 }
 
 /* Chat input row */
-.locus-chat-input-row {
+.rl-chat-input-row {
 	display: flex;
 	gap: 6px;
 	padding: 8px;
@@ -426,7 +426,7 @@
 	align-items: flex-end;
 }
 
-.locus-chat-input {
+.rl-chat-input {
 	flex: 1;
 	resize: none;
 	padding: 8px 10px;
@@ -439,18 +439,18 @@
 	line-height: 1.4;
 }
 
-.locus-chat-input:focus {
+.rl-chat-input:focus {
 	outline: none;
 	border-color: var(--text-accent);
 }
 
-.locus-chat-btns {
+.rl-chat-btns {
 	display: flex;
 	flex-direction: column;
 	gap: 4px;
 }
 
-.locus-send-btn, .locus-stop-btn {
+.rl-send-btn, .rl-stop-btn {
 	padding: 6px 12px;
 	border-radius: 7px;
 	border: none;
@@ -462,24 +462,24 @@
 	transition: box-shadow 0.1s, transform 0.1s;
 }
 
-.locus-send-btn, .locus-stop-btn {
+.rl-send-btn, .rl-stop-btn {
 	&:active {
 		transform: translateY(1px);
 		box-shadow: none;
 	}
 }
 
-.locus-send-btn {
+.rl-send-btn {
 	background: var(--interactive-accent);
 	color: var(--text-on-accent);
 }
 
-.locus-send-btn:hover {
+.rl-send-btn:hover {
 	background: var(--interactive-accent-hover);
 	box-shadow: 0 2px 5px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.1);
 }
 
-.locus-stop-btn {
+.rl-stop-btn {
 	background: var(--background-modifier-error);
 	color: var(--text-error);
 	box-shadow: 0 1px 3px rgba(0,0,0,0.2);
@@ -489,30 +489,30 @@
    Quick-ask modal
    ============================================================ */
 
-.locus-modal {
+.rl-modal {
 	width: min(640px, 90vw);
 }
 
-.locus-modal-content {
+.rl-modal-content {
 	display: flex;
 	flex-direction: column;
 	gap: 10px;
 	padding: 4px 0;
 }
 
-.locus-modal-title-row {
+.rl-modal-title-row {
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
 }
 
-.locus-modal-title {
+.rl-modal-title {
 	font-size: 1em;
 	font-weight: 700;
 	color: var(--text-accent);
 }
 
-.locus-modal-input {
+.rl-modal-input {
 	width: 100%;
 	resize: none;
 	padding: 10px 12px;
@@ -525,18 +525,18 @@
 	box-sizing: border-box;
 }
 
-.locus-modal-input:focus {
+.rl-modal-input:focus {
 	outline: none;
 	border-color: var(--text-accent);
 }
 
-.locus-modal-btn-row {
+.rl-modal-btn-row {
 	display: flex;
 	gap: 6px;
 	align-items: center;
 }
 
-.locus-open-panel-btn {
+.rl-open-panel-btn {
 	margin-left: auto;
 	padding: 5px 12px;
 	border-radius: 6px;
@@ -547,15 +547,15 @@
 	cursor: pointer;
 }
 
-.locus-open-panel-btn:hover { color: var(--text-normal); }
+.rl-open-panel-btn:hover { color: var(--text-normal); }
 
-.locus-modal-status {
+.rl-modal-status {
 	font-size: 0.8em;
 	color: var(--text-muted);
 	min-height: 16px;
 }
 
-.locus-modal-steps {
+.rl-modal-steps {
 	display: flex;
 	flex-direction: column;
 	gap: 4px;
@@ -565,13 +565,13 @@
 	border-left: 2px solid var(--background-modifier-border);
 }
 
-.locus-modal-step {
+.rl-modal-step {
 	display: flex;
 	align-items: center;
 	gap: 6px;
 }
 
-.locus-modal-answer {
+.rl-modal-answer {
 	font-size: 0.9em;
 	line-height: 1.6;
 	max-height: 40vh;
@@ -579,7 +579,7 @@
 	color: var(--text-normal);
 }
 
-.locus-modal-sources {
+.rl-modal-sources {
 	display: flex;
 	flex-wrap: wrap;
 	gap: 4px;
@@ -589,14 +589,14 @@
    Chat sessions list
    ============================================================ */
 
-.locus-sessions-screen,
-.locus-chat-screen {
+.rl-sessions-screen,
+.rl-chat-screen {
 	display: flex;
 	flex-direction: column;
 	height: 100%;
 }
 
-.locus-new-chat-btn {
+.rl-new-chat-btn {
 	margin: 8px 10px;
 	padding: 8px 14px;
 	background: var(--interactive-accent);
@@ -611,30 +611,30 @@
 	transition: box-shadow 0.1s, transform 0.1s;
 }
 
-.locus-new-chat-btn:hover {
+.rl-new-chat-btn:hover {
 	background: var(--interactive-accent-hover);
 	box-shadow: 0 2px 6px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.12);
 }
 
-.locus-new-chat-btn:active {
+.rl-new-chat-btn:active {
 	transform: translateY(1px);
 	box-shadow: 0 0 2px rgba(0,0,0,0.3);
 }
 
-.locus-sessions-list {
+.rl-sessions-list {
 	flex: 1;
 	overflow-y: auto;
 	padding: 4px 0;
 }
 
-.locus-sessions-empty {
+.rl-sessions-empty {
 	padding: 16px 12px;
 	color: var(--text-muted);
 	font-size: 0.88em;
 	text-align: center;
 }
 
-.locus-session-item {
+.rl-session-item {
 	display: flex;
 	align-items: center;
 	padding: 8px 10px;
@@ -643,14 +643,14 @@
 	gap: 6px;
 }
 
-.locus-session-item:hover { background: var(--background-modifier-hover); }
+.rl-session-item:hover { background: var(--background-modifier-hover); }
 
-.locus-session-info {
+.rl-session-info {
 	flex: 1;
 	min-width: 0;
 }
 
-.locus-session-title {
+.rl-session-title {
 	font-size: 0.9em;
 	font-weight: 500;
 	white-space: nowrap;
@@ -658,13 +658,13 @@
 	text-overflow: ellipsis;
 }
 
-.locus-session-date {
+.rl-session-date {
 	font-size: 0.75em;
 	color: var(--text-muted);
 	margin-top: 2px;
 }
 
-.locus-session-delete {
+.rl-session-delete {
 	flex-shrink: 0;
 	background: none;
 	border: none;
@@ -677,11 +677,11 @@
 	transition: opacity 0.15s;
 }
 
-.locus-session-item:hover .locus-session-delete { opacity: 1; }
-.locus-session-delete:hover { color: var(--text-error); background: var(--background-modifier-error); }
+.rl-session-item:hover .rl-session-delete { opacity: 1; }
+.rl-session-delete:hover { color: var(--text-error); background: var(--background-modifier-error); }
 
 /* Back button & session title in chat header */
-.locus-back-btn {
+.rl-back-btn {
 	background: var(--background-modifier-hover);
 	border: 1px solid var(--background-modifier-border);
 	border-radius: 6px;
@@ -694,12 +694,12 @@
 	transition: background 0.1s, color 0.1s;
 }
 
-.locus-back-btn:hover {
+.rl-back-btn:hover {
 	background: var(--background-modifier-border);
 	color: var(--text-normal);
 }
 
-.locus-chat-session-title {
+.rl-chat-session-title {
 	flex: 1;
 	font-size: 0.88em;
 	font-weight: 600;

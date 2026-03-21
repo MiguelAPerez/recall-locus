@@ -34,7 +34,7 @@ export interface DocumentEntry {
 }
 
 function buildMultipart(fields: Record<string, string>): { body: ArrayBuffer; contentType: string } {
-	const boundary = `----LocusBoundary${Math.random().toString(36).slice(2)}`;
+	const boundary = `----RecallLocusBoundary${Math.random().toString(36).slice(2)}`;
 	let raw = "";
 	for (const [key, value] of Object.entries(fields)) {
 		raw += `--${boundary}\r\n`;
@@ -50,7 +50,7 @@ function buildMultipart(fields: Record<string, string>): { body: ArrayBuffer; co
 	};
 }
 
-export class LocusClient {
+export class RecallLocusClient {
 	private baseUrl: string;
 	private confirmedSpaces = new Set<string>();
 

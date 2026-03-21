@@ -1,10 +1,10 @@
 {
-  "id": "locus-obsidian",
-  "name": "Locus",
+  "id": "recall-locus",
+  "name": "RecallLocus",
   "version": "0.1.0",
   "minAppVersion": "0.15.0",
-  "description": "Link your vault to a Locus space and search it with natural language.",
+  "description": "Recall and search your notes with RecallLocus.",
   "author": "MiguelAPerez",
-  "authorUrl": "https://github.com/MiguelAPerez/locus",
+  "authorUrl": "https://github.com/MiguelAPerez/recall-locus",
   "isDesktopOnly": false
 }
