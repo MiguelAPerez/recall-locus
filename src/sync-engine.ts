@@ -53,7 +53,7 @@ export class SyncEngine {
 		this.plugin.setStatus("syncing");
 
 		try {
-			await this.client.createSpace(spaceName);
+			await this.client.ensureSpace(spaceName);
 
 			const files = this.plugin.app.vault.getMarkdownFiles();
 			const syncData = this.plugin.syncData;
@@ -93,7 +93,7 @@ export class SyncEngine {
 		if (!spaceName) return;
 
 		try {
-			await this.client.createSpace(spaceName);
+			await this.client.ensureSpace(spaceName);
 			await this.ingestFile(file);
 			await this.plugin.saveSyncData();
 		} catch (err) {
@@ -120,7 +120,7 @@ export class SyncEngine {
 		if (!spaceName) return;
 
 		try {
-			await this.client.createSpace(spaceName);
+			await this.client.ensureSpace(spaceName);
 			await this.removeRecord(oldPath);
 			await this.ingestFile(file);
 			await this.plugin.saveSyncData();

@@ -52,6 +52,7 @@ function buildMultipart(fields: Record<string, string>): { body: ArrayBuffer; co
 
 export class LocusClient {
 	private baseUrl: string;
+	private confirmedSpaces = new Set<string>();
 
 	constructor(baseUrl: string) {
 		this.baseUrl = baseUrl.replace(/\/$/, "");
@@ -66,16 +67,32 @@ export class LocusClient {
 		}
 	}
 
-	async createSpace(name: string): Promise<void> {
-		const res = await requestUrl({
+	async ensureSpace(name: string): Promise<void> {
+		if (this.confirmedSpaces.has(name)) return;
+
+		// Check existing spaces first
+		const listRes = await requestUrl({ url: `${this.baseUrl}/spaces`, throw: false });
+		if (listRes.status === 200) {
+			const spaces: string[] = listRes.json.spaces ?? [];
+			if (spaces.includes(name)) {
+				this.confirmedSpaces.add(name);
+				return;
+			}
+		}
+
+		// Not found — create it
+		const createRes = await requestUrl({
 			url: `${this.baseUrl}/spaces`,
 			method: "POST",
 			headers: { "Content-Type": "application/json" },
 			body: JSON.stringify({ name }),
 			throw: false,
 		});
-		if (res.status !== 200 && res.status !== 201 && res.status !== 409) {
-			throw new Error(`Failed to create space "${name}": ${res.status}`);
+
+		if (createRes.status === 200 || createRes.status === 201) {
+			this.confirmedSpaces.add(name);
+		} else {
+			throw new Error(`Failed to create space "${name}": ${createRes.status}`);
 		}
 	}
 
