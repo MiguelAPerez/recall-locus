@@ -40,7 +40,7 @@ export class RecallLocusSettingTab extends PluginSettingTab {
 			.setDesc("Base URL of your running server.")
 			.addText((text) =>
 				text
-					.setPlaceholder("http://localhost:8000")
+					.setPlaceholder("(localhost:8000)")
 					.setValue(this.plugin.settings.recallLocusUrl)
 					.onChange(async (value) => {
 						this.plugin.settings.recallLocusUrl = value.trim();
@@ -63,7 +63,7 @@ export class RecallLocusSettingTab extends PluginSettingTab {
 			.setDesc("Space this vault maps to. Created automatically on first sync.")
 			.addText((text) =>
 				text
-					.setPlaceholder("my_vault")
+					.setPlaceholder("Notebook1")
 					.setValue(this.plugin.settings.spaceName)
 					.onChange(async (value) => {
 						this.plugin.settings.spaceName = value.trim().toLowerCase().replace(/\s+/g, "_");
@@ -110,10 +110,10 @@ export class RecallLocusSettingTab extends PluginSettingTab {
 
 		new Setting(containerEl)
 			.setName("Ollama URL")
-			.setDesc("Base URL of your Ollama instance.")
+			.setDesc("Base instance URL")
 			.addText((text) =>
 				text
-					.setPlaceholder("http://localhost:11434")
+					.setPlaceholder("(localhost:11434)")
 					.setValue(this.plugin.settings.ollamaUrl)
 					.onChange(async (value) => {
 						this.plugin.settings.ollamaUrl = value.trim();
@@ -135,7 +135,7 @@ export class RecallLocusSettingTab extends PluginSettingTab {
 			.setDesc("Ollama model to use for the chat agent (eg llama3.2).")
 			.addText((text) =>
 				text
-					.setPlaceholder("llama3.2")
+					.setPlaceholder("(llama3.2)")
 					.setValue(this.plugin.settings.chatModel)
 					.onChange(async (value) => {
 						this.plugin.settings.chatModel = value.trim();
