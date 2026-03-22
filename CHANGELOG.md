@@ -1,3 +1,9 @@
+## 0.1.3 (2026-03-21)
+
+### Fix
+
+- remove undescribed eslint-disable comments for obsidianmd/ui/sentence-case
+
 ## 0.1.2 (2026-03-21)
 
 ### Fix
