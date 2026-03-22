@@ -1,3 +1,9 @@
+## 0.1.4 (2026-03-22)
+
+### Fix
+
+- **settings**: update placeholder text for better clarity
+
 ## 0.1.3 (2026-03-21)
 
 ### Fix
